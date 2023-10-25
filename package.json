@@ -1,0 +1,93 @@
+{
+	"name": "train-tracker-api",
+	"description": "HTTP API that serves aggregated data from Network Rail & National Rail feeds.",
+	"version": "0.1.0",
+	"main": "./lib/cjs/index.js",
+	"module": "./lib/esm/index.js",
+	"types": "./lib/esm/index.d.ts",
+	"type": "module",
+	"scripts": {
+		"clean": "rm --recursive --force dist lib docs *.tsbuildinfo",
+		"update": "yarn upgrade-interactive --latest",
+		"lint": "npx eslint source",
+		"build": "npm run build:esm && npm run build:cjs",
+		"build:esm": "npx tsc --project tsconfig.esm.json",
+		"build:cjs": "npx tsc --project tsconfig.cjs.json",
+		"test": "npm run clean && npx tsc && NODE_ENV=test npx mocha --ui tdd --exit --recursive dist/tests",
+		"start": "npm run build && node .",
+		"docs": "npm run build:esm && npx jsdoc --destination docs lib/esm",
+		"prepack": "npm run clean && npm run build",
+		"docker": "npm run build && docker buildx build --pull --file Dockerfile --tag train-tracker-api:latest .",
+		"compose": "docker compose up --pull missing --force-recreate"
+	},
+	"exports": {
+		"import": "./lib/esm/index.js",
+		"require": "./lib/cjs/index.js",
+		"types": "./lib/esm/index.js",
+		"default": "./lib/esm/index.js"
+	},
+	"files": [
+		"lib",
+		"package.json",
+		"README.md",
+		"LICENSE.txt"
+	],
+	"author": {
+		"name": "viral32111",
+		"email": "contact@viral32111.com",
+		"url": "https://viral32111.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/viral32111/train-tracker-api.git"
+	},
+	"bugs": {
+		"url": "https://github.com/viral32111/train-tracker-api/issues"
+	},
+	"homepage": "https://github.com/viral32111/train-tracker-api",
+	"keywords": [
+		"api",
+		"train",
+		"rail",
+		"great-britain"
+	],
+	"license": "AGPL-3.0-only",
+	"private": true,
+	"dependencies": {
+		"dotenv": "^16.3.1",
+		"express": "^4.18.2",
+		"log4js": "^6.9.1",
+		"mongodb": "^6.2.0",
+		"ws": "^8.14.2"
+	},
+	"devDependencies": {
+		"@types/chai": "^4.3.9",
+		"@types/express": "^4.17.20",
+		"@types/mocha": "^10.0.3",
+		"@types/node": "^20.8.9",
+		"@types/ws": "^8.5.8",
+		"@typescript-eslint/eslint-plugin": "^6.9.0",
+		"@typescript-eslint/parser": "^6.9.0",
+		"chai": "^4.3.10",
+		"chai-http": "^4.4.0",
+		"eslint": "^8.52.0",
+		"eslint-config-prettier": "^9.0.0",
+		"eslint-plugin-deprecation": "^2.0.0",
+		"eslint-plugin-jsdoc": "^46.8.2",
+		"eslint-plugin-node": "^11.1.0",
+		"eslint-plugin-prettier": "^5.0.1",
+		"jsdoc": "^4.0.2",
+		"mocha": "^10.2.0",
+		"prettier": "^3.0.3",
+		"prettier-eslint": "^16.1.1",
+		"typescript": "^5.2.2"
+	},
+	"optionalDependencies": {
+		"bufferutil": "^4.0.8",
+		"utf-8-validate": "^6.0.3"
+	},
+	"engines": {
+		"node": ">=21.1.0",
+		"npm": ">=10.2.0"
+	}
+}

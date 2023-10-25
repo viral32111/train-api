@@ -1,0 +1,43 @@
+# GitHub
+.git
+.github/
+
+# IDEs
+.vscode/
+
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+*.lock
+
+# Builds
+dist/
+lib/
+docs/
+*.tsbuildinfo
+*.d.ts
+*.map
+
+# Package Configuration
+*.config.ts
+*.config.js
+*.json
+
+# Docker
+Dockerfile
+docker-compose.yml
+
+# Documentation
+*.md
+*.txt
+
+# Environment Variables
+.env*
+
+# Ignores
+.*ignore
+
+# macOS & Windows
+.DS_Store
+Thumbs.db
