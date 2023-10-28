@@ -1,7 +1,7 @@
 # Dependencies
 node_modules/
-npm-debug.log
-yarn-error.log
+npm-*.log
+yarn-*.log
 
 # Builds
 dist/

@@ -1,0 +1,189 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - '**'
+    branches:
+      - '**'
+    tags:
+      - '*.*.*'
+  workflow_dispatch:
+
+env:
+  ARTIFACT_NAME: train-api
+  DOCKER_IMAGE_NAME: train-api
+  DOCKER_REGISTRY_DOMAIN: ghcr.io
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    services:
+      mongodb:
+        image: mongo:7.0-jammy
+        env:
+          MONGO_INITDB_ROOT_USERNAME: ${{ github.sha }}-user
+          MONGO_INITDB_ROOT_PASSWORD: ${{ github.sha }}-password
+          MONGO_INITDB_DATABASE: ${{ github.sha }}-database
+        ports:
+          - 27017:27017
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build project
+        run: yarn build
+
+      - name: Generate documentation
+        run: yarn docs
+
+      - name: Generate secrets
+        id: generate
+        run: |
+          echo "EXPRESS_AUTHORIZATION_TOKEN=$(openssl rand -hex 16)" >> $GITHUB_OUTPUT
+          echo "MONGODB_SECRET=$(openssl rand -hex 16)" >> $GITHUB_OUTPUT
+
+      - name: Run tests
+        env:
+          NODE_ENV: test
+          MONGODB_USER_NAME: ${{ github.sha }}-user
+          MONGODB_USER_PASSWORD: ${{ github.sha }}-password
+          MONGODB_DATABASE: ${{ github.sha }}-database
+          MONGODB_SECRET: ${{ steps.generate.outputs.MONGODB_SECRET }}
+          EXPRESS_AUTHORIZATION_TOKEN: ${{ steps.generate.outputs.EXPRESS_AUTHORIZATION_TOKEN }}
+        run: yarn test
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: |
+            dist/
+            bundle/
+            lib/
+            docs/
+            .env.example
+            package.json
+            yarn.lock
+            LICENSE.txt
+
+  docker:
+    name: Docker
+    runs-on: ubuntu-22.04
+    needs: build-test
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.job }}-${{ github.ref }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v3
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v2
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Login to GitHub Container Registry
+        if: ${{ github.event_name != 'pull_request' && !startsWith( github.ref_name, 'dependabot/' ) }}
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.DOCKER_REGISTRY_DOMAIN }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: artifact
+
+      - name: Create metadata for Docker image
+        id: metadata
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.DOCKER_REGISTRY_DOMAIN }}/${{ github.repository_owner }}/${{ env.DOCKER_IMAGE_NAME }}
+          flavor: latest=true
+          tags: |
+            type=ref,event=pr
+            type=ref,event=branch
+            type=semver,pattern={{major}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}.{{minor}}.{{patch}}
+          labels: |
+            org.opencontainers.image.title=Train API
+            org.opencontainers.image.vendor=${{ github.repository_owner }}
+            com.docker.extension.publisher-url=https://viral32111.com
+
+      - name: Build & push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          push: ${{ github.event_name != 'pull_request' && !startsWith( github.ref_name, 'dependabot/' ) }}
+          file: Dockerfile
+          context: artifact
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          provenance: false
+          no-cache: true
+          pull: true
+
+      - name: Delete stale Docker images
+        if: ${{ github.event_name != 'pull_request' && !startsWith( github.ref_name, 'dependabot/' ) }}
+        uses: actions/delete-package-versions@v4
+        with:
+          package-type: container
+          package-name: ${{ env.DOCKER_IMAGE_NAME }}
+          delete-only-untagged-versions: true
+          min-versions-to-keep: 1
+          ignore-versions: latest
+
+  deploy-github:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-22.04
+    if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+    needs: build-test
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v3
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: artifact
+
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: artifact/docs
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2

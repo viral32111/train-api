@@ -1,0 +1,51 @@
+version: "3"
+
+services:
+  mongodb:
+    container_name: mongodb
+    image: mongo:7.0-jammy
+    pull_policy: always
+    restart: on-failure
+    networks:
+      - train-api
+    ports:
+      - target: 27017
+        published: 27017
+        host_ip: 127.0.0.1
+        protocol: tcp
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=docker
+      - MONGO_INITDB_ROOT_PASSWORD=
+      - MONGO_INITDB_DATABASE=train-api
+    volumes:
+      - mongodb:/data/db
+
+  train-api:
+    container_name: train-api
+    image: ghcr.io/viral32111/train-api:latest
+    pull_policy: if_not_present
+    restart: never
+    networks:
+      - train-api
+    ports:
+      - target: 5000
+        published: 5000
+        host_ip: 127.0.0.1
+        protocol: tcp
+    environment:
+      - EXPRESS_AUTHORIZATION_TOKEN=
+      - MONGODB_SERVER_ADDRESS=mongodb
+      - MONGODB_AUTH_USER=docker
+      - MONGODB_AUTH_PASSWORD=
+      - MONGODB_DATABASE=train-api
+      - MONGODB_SECRET_KEY=
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+volumes:
+  mongodb:
+
+networks:
+  train-api:
+    driver: bridge
