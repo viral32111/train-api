@@ -9,6 +9,8 @@
 
 A HTTP JSON API that serves aggregated train and rail infrastructure data from the United Kingdom's [Network Rail](https://wiki.openraildata.com/index.php?title=About_the_Network_Rail_feeds) and [National Rail (NRE) / Rail Delivery Group](https://wiki.openraildata.com/index.php?title=About_the_National_Rail_Feeds) feeds.
 
+The data served by this API powers [my Train Tracker mobile app](https://github.com/viral32111/train-tracker).
+
 **This project is under development and has no stable release yet.**
 
 ## 🔗 Useful Links

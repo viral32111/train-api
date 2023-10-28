@@ -1,6 +1,6 @@
 {
-	"name": "train-api",
-	"description": "HTTP API that serves aggregated data from Network Rail & National Rail feeds.",
+	"name": "@viral32111/train-api",
+	"description": "API for train and rail infrastructure data aggregated from national feeds.",
 	"version": "0.1.0",
 	"main": "./bundle/server.js",
 	"module": "./dist/server/index.js",
@@ -17,7 +17,6 @@
 		"start": "node .",
 		"debug": "node --inspect .",
 		"docs": "npx jsdoc --destination docs lib/esm/package",
-		"prepack": "npm run clean && npm run build:package",
 		"docker": "docker buildx build --pull --file Dockerfile --tag ghcr.io/viral32111/train-api:latest .",
 		"compose": "docker compose up --pull missing --force-recreate --remove-orphans --renew-anon-volumes --abort-on-container-exit"
 	},
@@ -40,7 +39,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/viral32111/train-api.git"
+		"url": "https://github.com/viral32111/train-api.git"
 	},
 	"bugs": {
 		"url": "https://github.com/viral32111/train-api/issues"

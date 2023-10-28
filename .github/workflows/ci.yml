@@ -38,6 +38,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20
+          registry-url: https://npm.pkg.github.com
+          scope: '@viral32111'
 
       - name: Install dependencies
         run: yarn install
@@ -63,6 +65,13 @@ jobs:
           MONGODB_SECRET: ${{ steps.generate.outputs.MONGODB_SECRET }}
           EXPRESS_AUTHORIZATION_TOKEN: ${{ steps.generate.outputs.EXPRESS_AUTHORIZATION_TOKEN }}
         run: yarn test
+
+      # TODO: Only run this on tag pushes
+      - name: Publish package
+        if: ${{ github.event_name != 'pull_request' && !startsWith( github.ref_name, 'dependabot/' ) }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm publish --dry-run
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
