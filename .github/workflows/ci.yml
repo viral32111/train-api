@@ -16,8 +16,8 @@ env:
   DOCKER_REGISTRY_DOMAIN: ghcr.io
 
 jobs:
-  build-test:
-    name: Build & Test
+  build:
+    name: Build
     runs-on: ubuntu-22.04
     permissions:
       contents: read
@@ -66,12 +66,11 @@ jobs:
           EXPRESS_AUTHORIZATION_TOKEN: ${{ steps.generate.outputs.EXPRESS_AUTHORIZATION_TOKEN }}
         run: yarn test
 
-      # TODO: Only run this on tag pushes
       - name: Publish package
-        if: ${{ github.event_name != 'pull_request' && !startsWith( github.ref_name, 'dependabot/' ) }}
+        if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm publish --dry-run
+        run: npm publish
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
@@ -90,7 +89,7 @@ jobs:
   docker:
     name: Docker
     runs-on: ubuntu-22.04
-    needs: build-test
+    needs: build
     concurrency:
       group: ${{ github.workflow }}-${{ github.job }}-${{ github.ref }}
       cancel-in-progress: false
@@ -163,11 +162,11 @@ jobs:
           min-versions-to-keep: 1
           ignore-versions: latest
 
-  deploy-github:
+  deploy:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-22.04
     if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
-    needs: build-test
+    needs: build
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -196,3 +195,27 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
+
+  release:
+    name: Release
+    runs-on: ubuntu-22.04
+    needs: build
+    if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v3
+        with:
+          path: artifact
+      
+      - name: Bundle build artifact
+        run: zip -r ${{ env.ARTIFACT_NAME }}.zip artifact
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          tag_name: ${{ github.ref_name }}
+          files: ${{ env.ARTIFACT_NAME }}.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
