@@ -6,6 +6,7 @@ import "./log"
 import { EXPRESS_LISTEN_ADDRESS, EXPRESS_LISTEN_PORT, PACKAGE_FILE } from "./environment"
 import { app, finaliseExpress } from "./express"
 import { parsePackageVersion } from "./helpers/version"
+import { experimentWithS3 } from "./sources/darwinPushPort"
 
 const log = log4js.getLogger("main")
 
@@ -55,8 +56,13 @@ export const httpServer = app.listen(EXPRESS_LISTEN_PORT, EXPRESS_LISTEN_ADDRESS
 
 	if (process.argv.includes("--exit")) {
 		log.debug("Stopping due to exit flag.")
-		//stopGracefully()
+		stopGracefully()
+		return
 	}
+
+	experimentWithS3().catch(error => {
+		log.fatal("Failed to experiment with S3! (%s)", error)
+	})
 })
 
 const stopGracefully = (): void => {

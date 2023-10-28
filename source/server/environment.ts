@@ -20,9 +20,31 @@ if (dotenvResult.error ?? !dotenvResult.parsed) {
 }
 
 log.debug("Ensuring all environment variables are set...")
+
 export const PACKAGE_FILE = getEnvironmentVariable<string>("PACKAGE_FILE", resolve(currentDirectory, "package.json"))
+
 export const EXPRESS_LISTEN_ADDRESS = getEnvironmentVariable<string>("EXPRESS_LISTEN_ADDRESS", "0.0.0.0")
 export const EXPRESS_LISTEN_PORT = getEnvironmentVariable<number>("EXPRESS_LISTEN_PORT", 3000, 0, 65535)
 export const EXPRESS_MAX_REQUEST_SIZE = getEnvironmentVariable<number>("EXPRESS_MAX_REQUEST_SIZE", 1024 * 1024 * 1, 0)
 export const EXPRESS_AUTHORIZATION_TOKEN = getEnvironmentVariable<string>("EXPRESS_AUTHORIZATION_TOKEN")
+
+export const NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_REGION = getEnvironmentVariable<string>(
+	"NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_REGION",
+	"eu-west-1"
+)
+export const NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_BUCKET = getEnvironmentVariable<string>(
+	"NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_BUCKET",
+	"darwin.xmltimetable"
+)
+export const NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_OBJECT_PREFIX = getEnvironmentVariable<string>(
+	"NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_OBJECT_PREFIX",
+	"PPTimetable"
+)
+export const NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_ACCESS_KEY = getEnvironmentVariable<string>(
+	"NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_ACCESS_KEY"
+)
+export const NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_SECRET_KEY = getEnvironmentVariable<string>(
+	"NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_SECRET_KEY"
+)
+
 log.info("Ensured all environment variables are set.")
