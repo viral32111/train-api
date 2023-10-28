@@ -8,6 +8,7 @@
 		"declarationDir": "./lib/cjs"
 	},
 	"exclude": [
-		"./source/tests/**/*"
+		"./source/tests/**/*",
+		"./source/server/**/*"
 	]
 }

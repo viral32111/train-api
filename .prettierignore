@@ -13,6 +13,7 @@ yarn-error.log
 
 # Builds
 dist/
+bundle/
 lib/
 docs/
 *.tsbuildinfo
@@ -20,8 +21,7 @@ docs/
 *.map
 
 # Package Configuration
-*.config.ts
-*.config.js
+*.config.*s
 *.json
 
 # Docker

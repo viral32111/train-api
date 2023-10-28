@@ -9,7 +9,6 @@
 		"plugin:@typescript-eslint/strict-type-checked",
 		"plugin:@typescript-eslint/stylistic-type-checked",
 		"plugin:deprecation/recommended",
-		"plugin:jsdoc/recommended",
 		"plugin:prettier/recommended",
 		"prettier"
 	],
@@ -21,8 +20,7 @@
 	},
 	"plugins": [
 		"@typescript-eslint",
-		"prettier",
-		"jsdoc"
+		"prettier"
 	],
 	"rules": {
 		"indent": [ "warn", "tab", {
@@ -35,14 +33,16 @@
 		"@typescript-eslint/no-explicit-any": "warn",
 		"@typescript-eslint/no-unused-vars": "warn",
 		"@typescript-eslint/ban-ts-comment": "warn",
-		"@typescript-eslint/no-non-null-assertion": "warn"
+		"@typescript-eslint/no-non-null-assertion": "warn",
+		"@typescript-eslint/explicit-module-boundary-types": "error",
+		"@typescript-eslint/explicit-function-return-type": "error",
+		"prettier/prettier": "warn"
 	},
 	"ignorePatterns": [
 		"node_modules/",
 		"dist/",
 		"lib/",
-		"*.config.js",
-		"*.config.ts",
+		"*.config.*s",
 		"*.json"
 	]
 }

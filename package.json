@@ -1,30 +1,33 @@
 {
-	"name": "train-tracker-api",
+	"name": "train-api",
 	"description": "HTTP API that serves aggregated data from Network Rail & National Rail feeds.",
 	"version": "0.1.0",
-	"main": "./lib/cjs/index.js",
-	"module": "./lib/esm/index.js",
-	"types": "./lib/esm/index.d.ts",
+	"main": "./bundle/server.js",
+	"module": "./dist/server/index.js",
+	"types": "./dist/server/index.d.ts",
 	"type": "module",
 	"scripts": {
-		"clean": "rm --recursive --force dist lib docs *.tsbuildinfo",
+		"clean": "rm --recursive --force dist bundle lib docs *.tsbuildinfo",
 		"update": "yarn upgrade-interactive --latest",
 		"lint": "npx eslint source",
-		"build": "npm run build:esm && npm run build:cjs",
-		"build:esm": "npx tsc --project tsconfig.esm.json",
-		"build:cjs": "npx tsc --project tsconfig.cjs.json",
-		"test": "npm run clean && npx tsc && NODE_ENV=test npx mocha --ui tdd --exit --recursive dist/tests",
-		"start": "npm run build && node .",
-		"docs": "npm run build:esm && npx jsdoc --destination docs lib/esm",
-		"prepack": "npm run clean && npm run build",
-		"docker": "npm run build && docker buildx build --pull --file Dockerfile --tag train-tracker-api:latest .",
-		"compose": "docker compose up --pull missing --force-recreate"
+		"build": "npm run build:server && npm run build:package",
+		"build:server": "npx tsc --project tsconfig.json && npx webpack --config webpack.config.cjs",
+		"build:package": "npm run build:package:esm && npm run build:package:cjs",
+		"build:package:esm": "npx tsc --project tsconfig.esm.json",
+		"build:package:cjs": "npx tsc --project tsconfig.cjs.json",
+		"test": "npm run clean && npm run build:server && NODE_ENV=test npx mocha --ui tdd --exit --recursive dist/server/tests",
+		"start": "npm run build:server && node .",
+		"debug": "npm run build:server && node --inspect .",
+		"docs": "npm run build:package:esm && npx jsdoc --destination docs lib/esm/package",
+		"prepack": "npm run clean && npm run build:package",
+		"docker": "npm run build:server && docker buildx build --pull --file Dockerfile --tag train-api:latest .",
+		"compose": "docker compose up --pull missing --force-recreate --remove-orphans --renew-anon-volumes --abort-on-container-exit"
 	},
 	"exports": {
-		"import": "./lib/esm/index.js",
-		"require": "./lib/cjs/index.js",
-		"types": "./lib/esm/index.js",
-		"default": "./lib/esm/index.js"
+		"import": "./lib/esm/package/index.js",
+		"require": "./lib/cjs/package/index.js",
+		"types": "./lib/esm/package/index.js",
+		"default": "./lib/esm/package/index.js"
 	},
 	"files": [
 		"lib",
@@ -39,12 +42,12 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/viral32111/train-tracker-api.git"
+		"url": "git+https://github.com/viral32111/train-api.git"
 	},
 	"bugs": {
-		"url": "https://github.com/viral32111/train-tracker-api/issues"
+		"url": "https://github.com/viral32111/train-api/issues"
 	},
-	"homepage": "https://github.com/viral32111/train-tracker-api",
+	"homepage": "https://github.com/viral32111/train-api",
 	"keywords": [
 		"api",
 		"train",
@@ -54,6 +57,7 @@
 	"license": "AGPL-3.0-only",
 	"private": true,
 	"dependencies": {
+		"cors": "^2.8.5",
 		"dotenv": "^16.3.1",
 		"express": "^4.18.2",
 		"log4js": "^6.9.1",
@@ -62,9 +66,11 @@
 	},
 	"devDependencies": {
 		"@types/chai": "^4.3.9",
+		"@types/cors": "^2.8.15",
 		"@types/express": "^4.17.20",
 		"@types/mocha": "^10.0.3",
 		"@types/node": "^20.8.9",
+		"@types/source-map-support": "^0.5.9",
 		"@types/ws": "^8.5.8",
 		"@typescript-eslint/eslint-plugin": "^6.9.0",
 		"@typescript-eslint/parser": "^6.9.0",
@@ -73,14 +79,17 @@
 		"eslint": "^8.52.0",
 		"eslint-config-prettier": "^9.0.0",
 		"eslint-plugin-deprecation": "^2.0.0",
-		"eslint-plugin-jsdoc": "^46.8.2",
 		"eslint-plugin-node": "^11.1.0",
 		"eslint-plugin-prettier": "^5.0.1",
 		"jsdoc": "^4.0.2",
 		"mocha": "^10.2.0",
 		"prettier": "^3.0.3",
 		"prettier-eslint": "^16.1.1",
-		"typescript": "^5.2.2"
+		"source-map-support": "^0.5.21",
+		"ts-loader": "^9.5.0",
+		"typescript": "^5.2.2",
+		"webpack": "^5.89.0",
+		"webpack-cli": "^5.1.4"
 	},
 	"optionalDependencies": {
 		"bufferutil": "^4.0.8",

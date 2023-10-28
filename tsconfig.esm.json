@@ -8,6 +8,7 @@
 		"declarationDir": "./lib/esm"
 	},
 	"exclude": [
-		"./source/tests/**/*"
+		"./source/tests/**/*",
+		"./source/server/**/*"
 	]
 }

@@ -5,6 +5,7 @@ yarn-error.log
 
 # Builds
 dist/
+bundle/
 lib/
 docs/
 *.tsbuildinfo
