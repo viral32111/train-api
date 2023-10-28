@@ -42,7 +42,7 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
-      - name: Build project
+      - name: Build code
         run: yarn build
 
       - name: Generate documentation
