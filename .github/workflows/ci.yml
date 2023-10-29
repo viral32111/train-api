@@ -41,8 +41,11 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@viral32111'
 
+      - name: Setup Yarn
+        run: yarn set version berry
+
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --immutable
 
       - name: Build code
         run: yarn build
@@ -77,6 +80,7 @@ jobs:
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: |
+            .yarn/releases
             dist/
             bundle/
             lib/
@@ -84,6 +88,7 @@ jobs:
             .env.example
             package.json
             yarn.lock
+            .yarnrc.yml
             LICENSE.txt
 
   docker:

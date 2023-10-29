@@ -9,6 +9,8 @@
 node_modules/
 npm-*.log
 yarn-*.log
+.pnp.*
+.yarn/*
 *.lock
 
 # Builds
