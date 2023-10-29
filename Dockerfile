@@ -14,7 +14,8 @@ USER 1000:1000
 WORKDIR /app
 
 # Install production dependencies
-RUN yarn install --non-interactive --prod --frozen-lockfile
+RUN yarn set version berry && \
+	yarn install --immutable
 
 # Configure the project
 ENV PACKAGE_FILE=/app/package.json \
