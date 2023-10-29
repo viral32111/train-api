@@ -42,7 +42,7 @@ jobs:
           scope: '@viral32111'
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --immutable
 
       - name: Build code
         run: yarn build
@@ -84,6 +84,7 @@ jobs:
             .env.example
             package.json
             yarn.lock
+            .yarnrc.yml
             LICENSE.txt
 
   docker:
