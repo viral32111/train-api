@@ -41,6 +41,9 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@viral32111'
 
+      - name: Setup Yarn
+        run: yarn set version berry
+
       - name: Install dependencies
         run: yarn install --immutable
 
