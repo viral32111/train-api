@@ -32,7 +32,7 @@ jobs:
           - 27017:27017
     steps:
       - name: Clone repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -103,7 +103,7 @@ jobs:
       packages: write
     steps:
       - name: Clone repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v2
