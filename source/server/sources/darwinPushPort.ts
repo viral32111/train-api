@@ -1,18 +1,26 @@
+import { basename, extname } from "path"
+
 import { GetObjectCommand, ListObjectsCommand, S3Client } from "@aws-sdk/client-s3"
 import { XMLParser } from "fast-xml-parser"
-import { readFile, utimes, writeFile } from "fs/promises"
 import log4js from "log4js"
 import { ungzip } from "node-gzip"
-import { basename, extname } from "path"
+import { createClient } from "redis"
+
 import { TimeTable } from "../classes/journey"
 import {
 	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_ACCESS_KEY,
 	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_BUCKET,
 	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_OBJECT_PREFIX,
 	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_REGION,
-	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_SECRET_KEY
+	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_SECRET_KEY,
+	REDIS_AUTH_PASSWORD,
+	REDIS_AUTH_USER,
+	REDIS_DATABASE,
+	REDIS_KEY_DELIMITER,
+	REDIS_KEY_PREFIX,
+	REDIS_SERVER_ADDRESS,
+	REDIS_SERVER_PORT
 } from "../environment"
-import { doesFileExist } from "../helpers/file"
 
 const log = log4js.getLogger("darwinPushPort")
 
@@ -29,6 +37,31 @@ const s3 = new S3Client({
 const xmlParser = new XMLParser({
 	ignoreAttributes: false
 })
+
+log.debug("Creating Redis client for server '%s:%d'...", REDIS_SERVER_ADDRESS, REDIS_SERVER_PORT)
+
+const redis = createClient({
+	name: "train-api",
+	socket: {
+		host: REDIS_SERVER_ADDRESS,
+		port: REDIS_SERVER_PORT,
+		tls: false
+	},
+	username: REDIS_AUTH_USER,
+	password: REDIS_AUTH_PASSWORD,
+	database: REDIS_DATABASE
+})
+
+redis.once("ready", () => {
+	log.debug("Redis client is ready.")
+})
+
+redis.once("error", (error: unknown) => {
+	log.error("Redis client encountered an error! (%s)", error?.toString())
+})
+
+const formatRedisKey = (parts: string[] | string): string =>
+	`${REDIS_KEY_PREFIX}${REDIS_KEY_DELIMITER}${Array.isArray(parts) ? parts.join(REDIS_KEY_DELIMITER) : parts}`
 
 export const experimentWithS3 = async (): Promise<void> => {
 	log.debug(
@@ -58,7 +91,9 @@ export const experimentWithS3 = async (): Promise<void> => {
 		return b.LastModified.getTime() - a.LastModified.getTime()
 	})
 
-	const savedFileNames = []
+	log.debug("Connecting to Redis...")
+	await redis.connect()
+	log.debug("Connected to Redis.")
 
 	for (const object of listResponse.Contents) {
 		if (!object.Key) {
@@ -69,18 +104,11 @@ export const experimentWithS3 = async (): Promise<void> => {
 		const fileName = basename(object.Key)
 		log.debug("%s\t%s\t%s", fileName, object.Size, object.LastModified)
 
-		const alreadyExists = await doesFileExist(`/tmp/darwin/${fileName}`)
-		if (alreadyExists) {
-			log.warn("Skipping '%s' as it already exists.", fileName)
-			savedFileNames.push(fileName)
-			continue
-		}
+		const fileKey = basename(basename(fileName, ".gz"), ".xml")
+		const dataFromRedis = await redis.get(formatRedisKey(["darwin-push-port", fileKey]))
 
-		const decompressedFileName = basename(fileName, ".gz")
-		const decompressedAlreadyExists = await doesFileExist(`/tmp/darwin/${decompressedFileName}`)
-		if (decompressedAlreadyExists) {
-			log.warn("Skipping '%s' as it already exists.", decompressedFileName)
-			savedFileNames.push(decompressedFileName)
+		if (dataFromRedis) {
+			log.warn("Skipping '%s' (%s) as it is already cached.", fileName, fileKey)
 			continue
 		}
 
@@ -96,44 +124,56 @@ export const experimentWithS3 = async (): Promise<void> => {
 			continue
 		}
 
-		const data = await downloadResponse.Body.transformToByteArray()
-		log.info("Downloaded '%s'.", fileName)
+		const dataAsBytes = await downloadResponse.Body.transformToByteArray()
+		log.info("Downloaded '%s' (%d bytes).", fileName, dataAsBytes.length)
 
-		let savedFileName = fileName
-
+		let dataInBuffer: Buffer | null = null
 		if (extname(fileName) === ".gz") {
-			const decompressedData = await ungzip(data)
-			log.info("Decompressed '%s'.", fileName)
-
-			savedFileName = decompressedFileName
-
-			await writeFile(`/tmp/darwin/${savedFileName}`, decompressedData)
-			if (object.LastModified)
-				await utimes(`/tmp/darwin/${savedFileName}`, object.LastModified, object.LastModified)
-			log.info("Saved '%s'.", savedFileName)
+			dataInBuffer = await ungzip(dataAsBytes)
+			log.info("Decompressed '%s' (%d bytes).", fileName, dataInBuffer.length)
 		} else {
-			await writeFile(`/tmp/darwin/${fileName}`, data)
-			if (object.LastModified) await utimes(`/tmp/darwin/${fileName}`, object.LastModified, object.LastModified)
+			dataInBuffer = Buffer.from(dataAsBytes)
 		}
 
-		savedFileNames.push(savedFileName)
-		log.info("Saved '%s'.", savedFileName)
+		const dataAsBase64 = dataInBuffer.toString("base64")
+		const redisSetResult = await redis.set(formatRedisKey(["darwin-push-port", fileKey]), dataAsBase64)
+		log.debug("Cached '%s' (%s, %d bytes) in Redis (%s).", fileName, fileKey, dataAsBase64.length, redisSetResult)
 	}
 
-	const latestTimetableFileName = savedFileNames.find(fileName => fileName.match(/^\d+_v8.xml$/) !== null)
-	const latestReferenceFileName = savedFileNames.find(fileName => fileName.match(/^\d+_ref_v4.xml$/) !== null)
-	if (!latestTimetableFileName || !latestReferenceFileName) {
+	const cachedKeysInRedis = await redis.keys(formatRedisKey(["darwin-push-port", "*"]))
+	log.debug("Found %d cached key(s) in Redis: %s", cachedKeysInRedis.length, cachedKeysInRedis.join(", "))
+
+	const latestTimetableKeyName = cachedKeysInRedis.find(key => key.match(/\d+_v8$/) !== null)
+	const latestReferenceKeyName = cachedKeysInRedis.find(key => key.match(/\d+_ref_v4$/) !== null)
+	if (!latestTimetableKeyName || !latestReferenceKeyName) {
 		log.error("Failed to find latest timetable & reference files!")
 		return
 	}
+	log.debug("Latest timetable key is '%s' & reference key is '%s'.", latestTimetableKeyName, latestReferenceKeyName)
+
+	const latestTimetableFileContentAsBase64 = await redis.get(latestTimetableKeyName)
+	if (!latestTimetableFileContentAsBase64) {
+		log.error("Failed to find latest timetable file content in Redis!")
+		return
+	}
+
+	const latestReferenceFileContentAsBase64 = await redis.get(latestReferenceKeyName)
+	if (!latestReferenceFileContentAsBase64) {
+		log.error("Failed to find latest reference file content in Redis!")
+		return
+	}
+
+	const latestTimetableFileContent = Buffer.from(latestTimetableFileContentAsBase64, "base64")
+	const latestReferenceFileContent = Buffer.from(latestReferenceFileContentAsBase64, "base64")
 	log.debug(
-		"Latest timetable file is '%s' & reference file is '%s'.",
-		latestTimetableFileName,
-		latestReferenceFileName
+		"Decoded latest timetable & reference file content (%d bytes, %d bytes).",
+		latestTimetableFileContent.length,
+		latestReferenceFileContent.length
 	)
 
-	const latestTimetableFileContent = await readFile(`/tmp/darwin/${latestTimetableFileName}`)
-	const latestReferenceFileContent = await readFile(`/tmp/darwin/${latestReferenceFileName}`)
+	log.debug("Disconnecting from Redis...")
+	await redis.disconnect()
+	log.debug("Disconnected from Redis.")
 
 	const latestTimetable = new TimeTable(latestTimetableFileContent)
 	const latestReferenceFileData = xmlParser.parse(latestReferenceFileContent) as object

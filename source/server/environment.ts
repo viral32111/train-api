@@ -47,4 +47,13 @@ export const NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_SECRET_KEY = getEnvironmentVariab
 	"NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_SECRET_KEY"
 )
 
+export const REDIS_SERVER_ADDRESS = getEnvironmentVariable<string>("REDIS_SERVER_ADDRESS", "127.0.0.1")
+export const REDIS_SERVER_PORT = getEnvironmentVariable<number>("REDIS_SERVER_PORT", 6379, 0, 65535)
+export const REDIS_USE_TLS = getEnvironmentVariable<boolean>("REDIS_USE_TLS", false)
+export const REDIS_AUTH_USER = getEnvironmentVariable<string>("REDIS_AUTH_USER", "default")
+export const REDIS_AUTH_PASSWORD = getEnvironmentVariable<string>("REDIS_AUTH_PASSWORD")
+export const REDIS_KEY_PREFIX = getEnvironmentVariable<string>("REDIS_KEY_PREFIX", "train")
+export const REDIS_KEY_DELIMITER = getEnvironmentVariable<string>("REDIS_KEY_DELIMITER", ":")
+export const REDIS_DATABASE = getEnvironmentVariable<number>("REDIS_DATABASE", 0, 0)
+
 log.info("Ensured all environment variables are set.")

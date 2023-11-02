@@ -18,7 +18,27 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=60254221062724713635efe2c435834a
       - MONGO_INITDB_DATABASE=train-api
     volumes:
-      - mongodb:/data/db
+      - type: volume
+        source: mongodb
+        target: /data/db
+
+  redis:
+    container_name: redis
+    image: redis:7.2-bookworm
+    pull_policy: always
+    restart: on-failure
+    networks:
+      - train-api
+    ports:
+      - target: 6379
+        published: 6379
+        host_ip: 127.0.0.1
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: ./redis.conf
+        target: /usr/local/etc/redis/redis.conf
+        read_only: true
 
   train-api:
     container_name: train-api
