@@ -1,13 +1,13 @@
+import { writeFile } from "fs/promises"
 import { basename, extname } from "path"
 
 import { GetObjectCommand, ListObjectsCommand, S3Client } from "@aws-sdk/client-s3"
-import { XMLParser } from "fast-xml-parser"
 import log4js from "log4js"
-import { ungzip } from "node-gzip"
+import gzip from "node-gzip"
 import { createClient } from "redis"
 
-import { writeFile } from "fs/promises"
-import { TimeTable } from "../classes/journey"
+import { Parser } from "xml2js"
+import { TimeTable } from "../classes/journey.js"
 import {
 	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_ACCESS_KEY,
 	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_BUCKET,
@@ -22,12 +22,23 @@ import {
 	REDIS_SERVER_ADDRESS,
 	REDIS_SERVER_PORT,
 	REDIS_USE_TLS
-} from "../environment"
+} from "../environment.js"
 
 const log = log4js.getLogger("darwinPushPort")
 
-log.debug("Creating S3 client for region '%s'...", NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_REGION)
+log.debug("Creating XML parser...")
+export const xmlParser = new Parser({
+	strict: true,
+	ignoreAttrs: false,
+	explicitRoot: true,
+	explicitArray: true,
+	explicitChildren: true,
+	normalizeTags: true,
+	normalize: true,
+	trim: true
+})
 
+log.debug("Creating S3 client for region '%s'...", NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_REGION)
 const s3 = new S3Client({
 	region: NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_REGION,
 	credentials: {
@@ -36,12 +47,7 @@ const s3 = new S3Client({
 	}
 })
 
-const xmlParser = new XMLParser({
-	ignoreAttributes: false
-})
-
 log.debug("Creating Redis client for server '%s:%d'...", REDIS_SERVER_ADDRESS, REDIS_SERVER_PORT)
-
 const redis = createClient({
 	name: "train-api",
 	socket: {
@@ -110,7 +116,7 @@ export const experimentWithS3 = async (): Promise<void> => {
 		const dataFromRedis = await redis.get(formatRedisKey(["darwin-push-port", fileKey]))
 
 		if (dataFromRedis) {
-			log.warn("Skipping '%s' (%s) as it is already cached.", fileName, fileKey)
+			log.debug("Skipping '%s' (%s) as it is already cached.", fileName, fileKey)
 			continue
 		}
 
@@ -131,7 +137,7 @@ export const experimentWithS3 = async (): Promise<void> => {
 
 		let dataInBuffer: Buffer | null = null
 		if (extname(fileName) === ".gz") {
-			dataInBuffer = await ungzip(dataAsBytes)
+			dataInBuffer = await gzip.ungzip(dataAsBytes)
 			log.info("Decompressed '%s' (%d bytes).", fileName, dataInBuffer.length)
 		} else {
 			dataInBuffer = Buffer.from(dataAsBytes)
@@ -173,16 +179,16 @@ export const experimentWithS3 = async (): Promise<void> => {
 		latestReferenceFileContent.length
 	)
 
-	await writeFile("latest-timetable.xml", latestTimetableFileContent)
-	await writeFile("latest-reference.xml", latestReferenceFileContent)
+	await writeFile("data/latest-timetable.xml", latestTimetableFileContent)
+	await writeFile("data/latest-reference.xml", latestReferenceFileContent)
 	log.debug("Wrote latest timetable & reference files to disk.")
 
 	log.debug("Disconnecting from Redis...")
 	await redis.disconnect()
 	log.debug("Disconnected from Redis.")
 
-	const latestTimetable = new TimeTable(latestTimetableFileContent)
-	const latestReferenceFileData = xmlParser.parse(latestReferenceFileContent) as object
+	const latestTimetable = await TimeTable.fromXML(latestTimetableFileContent)
+	const latestReferenceFileData = (await xmlParser.parseStringPromise(latestReferenceFileContent)) as object
 	log.debug("Parsed latest timetable & reference files (%d).", Object.keys(latestReferenceFileData).length)
 
 	// const journeys = latestTimetable.getJourneysBetween("PADTLL", "PLYMTH")
@@ -200,21 +206,23 @@ export const experimentWithS3 = async (): Promise<void> => {
 		return a.originPoint.workingScheduledDepartureTime.unix() - b.originPoint.workingScheduledDepartureTime.unix()
 	})
 
+	//for (const journey of latestTimetable.journeys) log.debug(journey.toString())
+
 	for (const journey of latestTimetable.journeys) {
+		if (journey.isCancelled) continue
 		//if (journey.isPassenger) continue
 
-		// const callingPoint = journey.getCallingPoint("PLYMTH")
-		// if (!callingPoint) continue
+		const callingPoint = journey.getCallingPoint("PLYMTH")
+		if (!callingPoint) continue
 
-		// log.debug(
-		// 	journey.toString(),
-		// 	"\t Platform",
-		// 	callingPoint.platform,
-		// 	"@",
-		// 	callingPoint.workingScheduledDepartureTime?.format("HH:mm:ss")
-		// )
-
-		log.debug(journey.toString())
+		log.debug(
+			journey.toString(),
+			"\t Platform",
+			callingPoint.platform ?? "?",
+			"@",
+			callingPoint.workingScheduledDepartureTime?.format("HH:mm:ss") ??
+				callingPoint.workingScheduledArrivalTime?.format("HH:mm:ss")
+		)
 	}
 
 	// const journeys = latestTimetableFileData.PportTimetable.Journey

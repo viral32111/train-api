@@ -14,12 +14,14 @@ yarn-*.log
 
 # Builds
 dist/
-bundle/
 lib/
 docs/
 *.tsbuildinfo
 *.d.ts
 *.map
+
+# Temporary runtime data
+data/
 
 # Environment Variables
 .env*

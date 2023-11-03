@@ -1,12 +1,10 @@
-import "source-map-support/register"
-
 import log4js from "log4js"
-import "./log"
+import "./log.js"
 
-import { EXPRESS_LISTEN_ADDRESS, EXPRESS_LISTEN_PORT, PACKAGE_FILE } from "./environment"
-import { app, finaliseExpress } from "./express"
-import { parsePackageVersion } from "./helpers/version"
-import { experimentWithS3 } from "./sources/darwinPushPort"
+import { EXPRESS_LISTEN_ADDRESS, EXPRESS_LISTEN_PORT, PACKAGE_FILE } from "./environment.js"
+import { app, finaliseExpress } from "./express.js"
+import { parsePackageVersion } from "./helpers/version.js"
+import { experimentWithS3 } from "./sources/darwinPushPort.js"
 
 const log = log4js.getLogger("main")
 

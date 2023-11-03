@@ -1,6 +1,6 @@
 import { readFileSync } from "fs"
 
-import { SemanticVersion } from "../classes/version"
+import { SemanticVersion } from "../classes/version.js"
 
 /**
  * Extracts the semantic version from a package.json file.

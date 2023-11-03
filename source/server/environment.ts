@@ -4,7 +4,7 @@ import { fileURLToPath } from "url"
 import { config as dotenv } from "dotenv"
 import log4js from "log4js"
 
-import { getEnvironmentVariable } from "./helpers/environment"
+import { getEnvironmentVariable } from "./helpers/environment.js"
 
 const log = log4js.getLogger("environment")
 

@@ -1,19 +1,24 @@
-import { XMLParser } from "fast-xml-parser"
+import { writeFile } from "fs/promises"
+
 import moment, { Moment } from "moment"
+
+import { xmlParser } from "../sources/darwinPushPort.js"
 
 //const log = log4js.getLogger("journey")
 
 export class TimeTable {
-	private static xmlParser = new XMLParser({
-		ignoreAttributes: false
-	})
-
 	public readonly journeys: Journey[] = []
 
-	public constructor(xml: Buffer) {
-		const timetableData = TimeTable.xmlParser.parse(xml) as DarwinTimetable
+	public constructor(darwinData: DarwinTimetable) {
+		this.journeys = darwinData.pporttimetable.$$.journey.map(journey => new Journey(journey))
+	}
 
-		this.journeys = timetableData.PportTimetable.Journey.map(journey => new Journey(journey))
+	public static async fromXML(xml: Buffer): Promise<TimeTable> {
+		const darwinData = (await xmlParser.parseStringPromise(xml)) as DarwinTimetable
+
+		await writeFile("data/parsed.json", JSON.stringify(darwinData, null, 1))
+
+		return new this(darwinData)
 	}
 
 	public getJourneysBetween(originTiploc: string, destinationTiploc: string): Journey[] {
@@ -57,40 +62,50 @@ export class Journey {
 
 	public readonly type?: string // Type of service (train/bus/ship)
 	public readonly category?: string // Category of service
+	public readonly isQ: boolean = false // Is this a Q train?
 
 	public readonly isPassenger: boolean = true // Is Passenger Service?
+
+	public readonly isCancelled: boolean = false // Is Cancelled?
+	public readonly cancellationReason?: string // Cancellation Reason
 
 	public readonly originPoint: Point // Origin point
 	public readonly intermediatePoints: Point[] = [] // Intermediate passenger & passing points
 	public readonly destinationPoint: Point // Destination point
 
 	public constructor(darwinData: DarwinJourney) {
-		this.id = darwinData["@_uid"]
-		this.headCode = darwinData["@_trainId"]
-		this.rttiId = darwinData["@_rid"]
+		this.id = darwinData.$.uid
+		this.headCode = darwinData.$.trainId
+		this.rttiId = darwinData.$.rid
 
-		this.scheduledStartDate = moment.utc(darwinData["@_ssd"], "YYYY-MM-DD")
-		this.atocCode = darwinData["@_toc"]
+		this.scheduledStartDate = moment.utc(darwinData.$.ssd, "YYYY-MM-DD")
+		this.atocCode = darwinData.$.toc
 
-		this.type = darwinData["@_status"]
-		this.category = darwinData["@_trainCat"]
+		this.type = darwinData.$.status
+		this.category = darwinData.$.trainCat
+		this.isQ = darwinData.$.qtrain === "true"
 
-		this.isPassenger = !(darwinData["@_isPassengerSvc"] === "false")
+		this.isPassenger = !(darwinData.$.isPassengerSvc === "false")
 
-		const originPoint = darwinData.OR ?? darwinData.OPOR
+		this.isCancelled = darwinData.$.can === "true"
+		this.cancellationReason = darwinData.$.cancelReason
+
+		const originPoint = darwinData.$$.or?.[0]?.$ ?? darwinData.$$.opor?.[0]?.$
 		if (!originPoint) throw new Error("Journey has no origin point")
 
-		const destinationPoint = darwinData.DT ?? darwinData.OPDT
+		const destinationPoint = darwinData.$$.dt?.[0]?.$ ?? darwinData.$$.opdt?.[0]?.$
 		if (!destinationPoint) throw new Error("Journey has no destination point")
 
 		this.originPoint = new Point(originPoint)
 		this.destinationPoint = new Point(destinationPoint)
 
 		// Add intermediate points
-		if (Array.isArray(darwinData.PP)) this.intermediatePoints.push(...darwinData.PP.map(point => new Point(point)))
-		if (Array.isArray(darwinData.IP)) this.intermediatePoints.push(...darwinData.IP.map(point => new Point(point)))
-		if (Array.isArray(darwinData.OPIP))
-			this.intermediatePoints.push(...darwinData.OPIP.map(point => new Point(point)))
+		if (Array.isArray(darwinData.$$.pp))
+			this.intermediatePoints.push(...darwinData.$$.pp.map(point => new Point(point.$)))
+		if (Array.isArray(darwinData.$$.ip))
+			this.intermediatePoints.push(...darwinData.$$.ip.map(point => new Point(point.$)))
+		if (Array.isArray(darwinData.$$.opip))
+			this.intermediatePoints.push(...darwinData.$$.opip.map(point => new Point(point.$)))
 
 		// Sort intermediate points by working scheduled arrival time
 		this.intermediatePoints.sort((a, b) => {
@@ -166,108 +181,117 @@ export class Point {
 			| DarwinJourneyIntermediateCallingPoint
 			| DarwinJourneyDestinationPoint
 	) {
-		this.tiploc = darwinData["@_tpl"]
-		this.activity = darwinData["@_act"]
+		this.tiploc = darwinData.tpl
+		this.activity = darwinData.act
 
-		if (darwinData["@_plat"]) this.platform = darwinData["@_plat"]
+		if (darwinData.plat) this.platform = darwinData.plat
 
-		if ("@_wta" in darwinData && darwinData["@_wta"])
-			this.workingScheduledArrivalTime = moment.utc(darwinData["@_wta"], "HH:mm:ss")
-		if ("@_wtd" in darwinData && darwinData["@_wtd"])
-			this.workingScheduledDepartureTime = moment.utc(darwinData["@_wtd"], "HH:mm:ss")
-		if ("@_wtp" in darwinData && darwinData["@_wtp"])
-			this.workingScheduledDepartureTime = moment.utc(darwinData["@_wtp"], "HH:mm:ss")
+		if ("wta" in darwinData && darwinData.wta)
+			this.workingScheduledArrivalTime = moment.utc(darwinData.wta, "HH:mm:ss")
+		if ("wtd" in darwinData && darwinData.wtd)
+			this.workingScheduledDepartureTime = moment.utc(darwinData.wtd, "HH:mm:ss")
+		if ("wtp" in darwinData && darwinData.wtp)
+			this.workingScheduledDepartureTime = moment.utc(darwinData.wtp, "HH:mm:ss")
 
-		if ("@_pta" in darwinData && darwinData["@_pta"])
-			this.publicScheduledArrivalTime = moment.utc(darwinData["@_pta"], "HH:mm:ss")
-		if ("@_ptd" in darwinData && darwinData["@_ptd"])
-			this.publicScheduledDepartureTime = moment.utc(darwinData["@_ptd"], "HH:mm:ss")
+		if ("pta" in darwinData && darwinData.pta)
+			this.publicScheduledArrivalTime = moment.utc(darwinData.pta, "HH:mm:ss")
+		if ("ptd" in darwinData && darwinData.ptd)
+			this.publicScheduledDepartureTime = moment.utc(darwinData.ptd, "HH:mm:ss")
 
-		if ("@_rdelay" in darwinData && darwinData["@_rdelay"])
-			this.changeRouteDelay = parseInt(darwinData["@_rdelay"], 10)
-		if ("@_fd" in darwinData && darwinData["@_fd"]) this.falseDestination = darwinData["@_fd"]
+		if ("rdelay" in darwinData && darwinData.rdelay) this.changeRouteDelay = parseInt(darwinData.rdelay, 10)
+		if ("fd" in darwinData && darwinData.fd) this.falseDestination = darwinData.fd
 	}
 }
 
 interface DarwinTimetable {
-	PportTimetable: {
-		Journey: DarwinJourney[]
+	pporttimetable: {
+		$: {
+			timetableID: string
+		}
+		$$: {
+			journey: DarwinJourney[]
+		}
 	}
 }
 
 interface DarwinJourney {
-	"@_rid": string // RTTI (Unique) Train Identifier
-	"@_uid": string // Train Unique Identifier
-	"@_trainId": string // Train Identifier (Headcode)
-	"@_toc": string // ATOC Code
+	$: {
+		rid: string // RTTI (Unique) Train Identifier
+		uid: string // Train Unique Identifier
+		trainId: string // Train Identifier (Headcode)
+		toc: string // ATOC Code
 
-	"@_ssd": string // Scheduled Start Date
+		ssd: string // Scheduled Start Date
 
-	"@_status"?: string // Type of service (train/bus/ship)
-	"@_trainCat"?: string // Train category
-	"@_isPassengerSvc"?: string // Is Passenger Service?
+		status?: string // Type of service (train/bus/ship)
+		trainCat?: string // Train category
+		isPassengerSvc?: string // Is Passenger Service?
+		qtrain?: string // Is this a Q train?
 
-	"@_cancelReason"?: string // Cancellation Reason
-
-	"OR"?: DarwinJourneyOriginPoint // Origin Point
-	"OPOR"?: DarwinJourneyOriginPoint // Operational Origin Point
-	"PP"?: DarwinJourneyIntermediatePassingPoint[] // Intermediate Passing Point
-	"IP"?: DarwinJourneyIntermediateCallingPoint[] // Intermediate Calling Point
-	"OPIP"?: DarwinJourneyIntermediateCallingPoint[] // Operational Intermediate Calling Point
-	"DT"?: DarwinJourneyDestinationPoint // Destination Point
-	"OPDT"?: DarwinJourneyDestinationPoint // Operational Destination Point
+		can?: string // Is Cancelled?
+		cancelReason?: string // Cancellation Reason
+	}
+	$$: {
+		or?: { $: DarwinJourneyOriginPoint }[] // Origin Point
+		opor?: { $: DarwinJourneyOriginPoint }[] // Operational Origin Point
+		pp?: { $: DarwinJourneyIntermediatePassingPoint }[] // Intermediate Passing Point
+		ip?: { $: DarwinJourneyIntermediateCallingPoint }[] // Intermediate Calling Point
+		opip?: { $: DarwinJourneyIntermediateCallingPoint }[] // Operational Intermediate Calling Point
+		dt?: { $: DarwinJourneyDestinationPoint }[] // Destination Point
+		opdt?: { $: DarwinJourneyDestinationPoint }[] // Operational Destination Point
+	}
 }
 
 interface DarwinJourneyPoint {
-	"@_tpl": string // TIPLOC
+	tpl: string // TIPLOC
 
-	"@_act"?: string // Activity Code
-	"@_planAct"?: string // Planned Activity Code
+	act?: string // Activity Code
+	planAct?: string // Planned Activity Code
 
-	"@_can"?: string // Cancelled?
+	can?: string // Cancelled?
 
-	"@_plat"?: string // Platform Number
+	plat?: string // Platform Number
 
-	"@_wta"?: string // Working Scheduled Arrival Time
-	"@_wtd"?: string // Working Scheduled Departure Time
-	"@_wtp"?: string // Working Scheduled Passing Time
+	wta?: string // Working Scheduled Arrival Time
+	wtd?: string // Working Scheduled Departure Time
+	wtp?: string // Working Scheduled Passing Time
 
-	"@_pta"?: string // Public Scheduled Arrival Time
-	"@_atd"?: string // Public Scheduled Departure Time
+	pta?: string // Public Scheduled Arrival Time
+	atd?: string // Public Scheduled Departure Time
 
-	"@_rdelay"?: string // Delay due to change of route
-	"@_fd"?: string // TIPLOC of False Destination
+	rdelay?: string // Delay due to change of route
+	fd?: string // TIPLOC of False Destination
 }
 
 interface DarwinJourneyOriginPoint extends DarwinJourneyPoint {
-	"@_plat"?: string // Platform Number
+	plat?: string // Platform Number
 
-	"@_wtd": string // Working Scheduled Departure Time
-	"@_ptd"?: string // Public Scheduled Departure Time
+	wtd: string // Working Scheduled Departure Time
+	ptd?: string // Public Scheduled Departure Time
 }
 
 interface DarwinJourneyIntermediatePassingPoint extends DarwinJourneyPoint {
-	"@_plat"?: string // Platform Number
+	plat?: string // Platform Number
 
-	"@_wtp": string // Working Scheduled Passing Time
+	wtp: string // Working Scheduled Passing Time
 
-	"@_pta"?: string // Public Scheduled Arrival Time
-	"@_ptd"?: string // Public Scheduled Departure Time
+	pta?: string // Public Scheduled Arrival Time
+	ptd?: string // Public Scheduled Departure Time
 }
 
 interface DarwinJourneyIntermediateCallingPoint extends DarwinJourneyPoint {
-	"@_plat": string // Platform Number
+	plat: string // Platform Number
 
-	"@_wta": string // Working Scheduled Arrival Time
-	"@_wtd": string // Working Scheduled Departure Time
+	wta: string // Working Scheduled Arrival Time
+	wtd: string // Working Scheduled Departure Time
 
-	"@_pta"?: string // Public Scheduled Arrival Time
-	"@_ptd"?: string // Public Scheduled Departure Time
+	pta?: string // Public Scheduled Arrival Time
+	ptd?: string // Public Scheduled Departure Time
 }
 
 interface DarwinJourneyDestinationPoint extends DarwinJourneyPoint {
-	"@_plat"?: string // Platform Number
+	plat?: string // Platform Number
 
-	"@_wta": string // Working Scheduled Arrival Time
-	"@_pta"?: string // Public Scheduled Arrival Time
+	wta: string // Working Scheduled Arrival Time
+	pta?: string // Public Scheduled Arrival Time
 }
