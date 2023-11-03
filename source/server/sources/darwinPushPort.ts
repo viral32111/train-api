@@ -6,6 +6,7 @@ import log4js from "log4js"
 import { ungzip } from "node-gzip"
 import { createClient } from "redis"
 
+import { writeFile } from "fs/promises"
 import { TimeTable } from "../classes/journey"
 import {
 	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_ACCESS_KEY,
@@ -19,7 +20,8 @@ import {
 	REDIS_KEY_DELIMITER,
 	REDIS_KEY_PREFIX,
 	REDIS_SERVER_ADDRESS,
-	REDIS_SERVER_PORT
+	REDIS_SERVER_PORT,
+	REDIS_USE_TLS
 } from "../environment"
 
 const log = log4js.getLogger("darwinPushPort")
@@ -45,7 +47,7 @@ const redis = createClient({
 	socket: {
 		host: REDIS_SERVER_ADDRESS,
 		port: REDIS_SERVER_PORT,
-		tls: false
+		tls: REDIS_USE_TLS
 	},
 	username: REDIS_AUTH_USER,
 	password: REDIS_AUTH_PASSWORD,
@@ -171,6 +173,10 @@ export const experimentWithS3 = async (): Promise<void> => {
 		latestReferenceFileContent.length
 	)
 
+	await writeFile("latest-timetable.xml", latestTimetableFileContent)
+	await writeFile("latest-reference.xml", latestReferenceFileContent)
+	log.debug("Wrote latest timetable & reference files to disk.")
+
 	log.debug("Disconnecting from Redis...")
 	await redis.disconnect()
 	log.debug("Disconnected from Redis.")
@@ -179,29 +185,37 @@ export const experimentWithS3 = async (): Promise<void> => {
 	const latestReferenceFileData = xmlParser.parse(latestReferenceFileContent) as object
 	log.debug("Parsed latest timetable & reference files (%d).", Object.keys(latestReferenceFileData).length)
 
-	const journeys = latestTimetable.getJourneysBetween("PADTLL", "PLYMTH")
-	log.debug("Found %d journey(s).", journeys.length)
+	// const journeys = latestTimetable.getJourneysBetween("PADTLL", "PLYMTH")
+	// log.debug("Found %d journey(s).", journeys.length)
 
-	for (const journey of journeys.slice(0, 100)) {
+	// for (const journey of journeys.slice(0, 100)) {
+	// 	log.debug(journey.toString())
+	// }
+
+	// sort by departure time
+	latestTimetable.journeys.sort((a, b) => {
+		if (!a.originPoint.workingScheduledDepartureTime) return 1
+		if (!b.originPoint.workingScheduledDepartureTime) return -1
+
+		return a.originPoint.workingScheduledDepartureTime.unix() - b.originPoint.workingScheduledDepartureTime.unix()
+	})
+
+	for (const journey of latestTimetable.journeys) {
+		//if (journey.isPassenger) continue
+
+		// const callingPoint = journey.getCallingPoint("PLYMTH")
+		// if (!callingPoint) continue
+
+		// log.debug(
+		// 	journey.toString(),
+		// 	"\t Platform",
+		// 	callingPoint.platform,
+		// 	"@",
+		// 	callingPoint.workingScheduledDepartureTime?.format("HH:mm:ss")
+		// )
+
 		log.debug(journey.toString())
 	}
-
-	/*
-	for (const journey of latestTimetable) {
-		if (journey.isPassenger) continue
-
-		const callingPoint = journey.getCallingPoint("PLYMTH")
-		if (!callingPoint) continue
-
-		log.debug(
-			journey.toString(),
-			"\t Platform",
-			callingPoint.platform,
-			"@",
-			callingPoint.workingScheduledDepartureTime?.format("HH:mm:ss")
-		)
-	}
-	*/
 
 	// const journeys = latestTimetableFileData.PportTimetable.Journey
 	// log.debug("Found %d journey(s).", journeys.length)

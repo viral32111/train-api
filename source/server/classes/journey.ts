@@ -99,6 +99,33 @@ export class Journey {
 
 			return a.workingScheduledArrivalTime.diff(b.workingScheduledArrivalTime)
 		})
+
+		if (!this.originPoint.tiploc)
+			throw new Error(
+				`Journey (service ${this.headCode} / ${this.id}) has no origin point TIPLOC: '${JSON.stringify(
+					darwinData
+				)}'`
+			)
+		if (!this.destinationPoint.tiploc)
+			throw new Error(
+				`Journey (service ${this.headCode} / ${this.id}) has no destination point TIPLOC: '${JSON.stringify(
+					darwinData
+				)}'`
+			)
+
+		if (!this.originPoint.workingScheduledDepartureTime)
+			throw new Error(
+				`Journey (service ${this.headCode} / ${
+					this.id
+				}) has no origin point working scheduled departure time: '${JSON.stringify(darwinData)}'`
+			)
+
+		if (!this.destinationPoint.workingScheduledArrivalTime)
+			throw new Error(
+				`Journey (service ${this.headCode} / ${
+					this.id
+				}) has no destination point working scheduled arrival time: '${JSON.stringify(darwinData)}'`
+			)
 	}
 
 	public toString = (): string =>
