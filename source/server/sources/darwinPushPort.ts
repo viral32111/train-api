@@ -5,9 +5,10 @@ import { GetObjectCommand, ListObjectsCommand, S3Client } from "@aws-sdk/client-
 import log4js from "log4js"
 import gzip from "node-gzip"
 import { createClient } from "redis"
-
 import { Parser } from "xml2js"
-import { TimeTable } from "../classes/journey.js"
+
+import moment from "moment"
+import { TimeTable } from "../classes/timetable.js"
 import {
 	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_ACCESS_KEY,
 	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_BUCKET,
@@ -23,6 +24,7 @@ import {
 	REDIS_SERVER_PORT,
 	REDIS_USE_TLS
 } from "../environment.js"
+import { stopGracefully } from "../index.js"
 
 const log = log4js.getLogger("darwinPushPort")
 
@@ -37,6 +39,7 @@ export const xmlParser = new Parser({
 	normalize: true,
 	trim: true
 })
+export const parseXML = async <Type>(xml: Buffer): Promise<Type> => (await xmlParser.parseStringPromise(xml)) as Type
 
 log.debug("Creating S3 client for region '%s'...", NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_REGION)
 const s3 = new S3Client({
@@ -151,6 +154,13 @@ export const experimentWithS3 = async (): Promise<void> => {
 	const cachedKeysInRedis = await redis.keys(formatRedisKey(["darwin-push-port", "*"]))
 	log.debug("Found %d cached key(s) in Redis: %s", cachedKeysInRedis.length, cachedKeysInRedis.join(", "))
 
+	cachedKeysInRedis.sort((a, b) => {
+		const aDate = moment(a.split(REDIS_KEY_DELIMITER)[2], "YYYYMMDDHHmmss")
+		const bDate = moment(b.split(REDIS_KEY_DELIMITER)[2], "YYYYMMDDHHmmss")
+
+		return bDate.unix() - aDate.unix()
+	})
+
 	const latestTimetableKeyName = cachedKeysInRedis.find(key => key.match(/\d+_v8$/) !== null)
 	const latestReferenceKeyName = cachedKeysInRedis.find(key => key.match(/\d+_ref_v4$/) !== null)
 	if (!latestTimetableKeyName || !latestReferenceKeyName) {
@@ -187,9 +197,7 @@ export const experimentWithS3 = async (): Promise<void> => {
 	await redis.disconnect()
 	log.debug("Disconnected from Redis.")
 
-	const latestTimetable = await TimeTable.fromXML(latestTimetableFileContent)
-	const latestReferenceFileData = (await xmlParser.parseStringPromise(latestReferenceFileContent)) as object
-	log.debug("Parsed latest timetable & reference files (%d).", Object.keys(latestReferenceFileData).length)
+	const latestTimetable = await TimeTable.parse(latestTimetableFileContent, latestReferenceFileContent)
 
 	// const journeys = latestTimetable.getJourneysBetween("PADTLL", "PLYMTH")
 	// log.debug("Found %d journey(s).", journeys.length)
@@ -199,6 +207,7 @@ export const experimentWithS3 = async (): Promise<void> => {
 	// }
 
 	// sort by departure time
+	log.debug("Sorting journeys by departure time...")
 	latestTimetable.journeys.sort((a, b) => {
 		if (!a.originPoint.workingScheduledDepartureTime) return 1
 		if (!b.originPoint.workingScheduledDepartureTime) return -1
@@ -208,20 +217,26 @@ export const experimentWithS3 = async (): Promise<void> => {
 
 	//for (const journey of latestTimetable.journeys) log.debug(journey.toString())
 
+	const rightNow = moment.now()
+
 	for (const journey of latestTimetable.journeys) {
 		if (journey.isCancelled) continue
-		//if (journey.isPassenger) continue
 
-		const callingPoint = journey.getCallingPoint("PLYMTH")
+		//if (journey.isPassenger) continue
+		if (!journey.originPoint.location.isStation || !journey.destinationPoint.location.isStation) continue
+
+		if (!journey.scheduledStartDate.isSame(rightNow, "day")) continue
+
+		const callingPoint = journey.getCallingPoint("EXETRSD")
 		if (!callingPoint) continue
 
+		if (callingPoint.workingScheduledDepartureTime?.isBefore(rightNow)) continue
+
 		log.debug(
-			journey.toString(),
-			"\t Platform",
-			callingPoint.platform ?? "?",
-			"@",
-			callingPoint.workingScheduledDepartureTime?.format("HH:mm:ss") ??
-				callingPoint.workingScheduledArrivalTime?.format("HH:mm:ss")
+			`${journey.toString()} [Platform ${callingPoint.platform ?? "?"} @ ${
+				callingPoint.workingScheduledDepartureTime?.format("DD/MM/YYYY HH:mm:ss") ??
+				callingPoint.workingScheduledArrivalTime?.format("DD/MM/YYYY HH:mm:ss")
+			}]`
 		)
 	}
 
@@ -240,4 +255,6 @@ export const experimentWithS3 = async (): Promise<void> => {
 	// 		journey.DT["@_pta"]
 	// 	)
 	// }
+
+	stopGracefully()
 }

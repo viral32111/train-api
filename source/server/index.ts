@@ -63,7 +63,7 @@ export const httpServer = app.listen(EXPRESS_LISTEN_PORT, EXPRESS_LISTEN_ADDRESS
 	})
 })
 
-const stopGracefully = (): void => {
+export const stopGracefully = (): void => {
 	log.info("Stopping...")
 
 	log.debug("Stopping Express...")
@@ -75,6 +75,8 @@ const stopGracefully = (): void => {
 		await mongoClient.close()
 		log.info("Disconnected from MongoDB.")
 		*/
+
+		//log.debug("Disconnecting Redis client...")
 	})
 }
 
