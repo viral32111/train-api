@@ -6,5 +6,9 @@ export enum Status {
 	Success = 0,
 
 	InvalidAuthorizationHeader = 1,
-	BadAuthorization = 2
+	BadAuthorization = 2,
+
+	NotImplementedYet = 3,
+
+	LoadingDarwinPushPortTimeTable = 4
 }

@@ -1,10 +1,11 @@
 import log4js from "log4js"
 import "./log.js"
 
+import { CronJob } from "cron"
+import { refresh } from "./classes/darwin-push-port.js"
 import { EXPRESS_LISTEN_ADDRESS, EXPRESS_LISTEN_PORT, PACKAGE_FILE } from "./environment.js"
 import { app, finaliseExpress } from "./express.js"
 import { parsePackageVersion } from "./helpers/version.js"
-import { experimentWithS3 } from "./sources/darwinPushPort.js"
 
 const log = log4js.getLogger("main")
 
@@ -53,14 +54,26 @@ export const httpServer = app.listen(EXPRESS_LISTEN_PORT, EXPRESS_LISTEN_ADDRESS
 	*/
 
 	if (process.argv.includes("--exit")) {
-		log.debug("Stopping due to exit flag.")
+		log.info("Stopping due to exit flag.")
 		stopGracefully()
 		return
 	}
 
-	experimentWithS3().catch(error => {
-		log.fatal("Failed to experiment with S3! (%s)", error)
-	})
+	new CronJob(
+		"0 * * * *", // Every hour
+		async () => {
+			log.info("Refreshing Darwin Push Port data...")
+
+			await refresh()
+		},
+		() => {
+			log.info("Refreshed Darwin Push Port data.")
+		},
+		true,
+		"utc",
+		undefined,
+		true
+	)
 })
 
 export const stopGracefully = (): void => {

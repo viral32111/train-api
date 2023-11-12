@@ -2,7 +2,7 @@ import { writeFile } from "fs/promises"
 
 import log4js from "log4js"
 
-import { parseXML } from "../sources/darwinPushPort.js"
+import { parse } from "../helpers/xml.js"
 import { DarwinJourney, Journey } from "./journey.js"
 import { DarwinTimeTableReferenceLocation, Location } from "./location.js"
 import { DarwinTimeTableReferenceTOC, TrainOperatingCompany } from "./toc.js"
@@ -28,11 +28,11 @@ export class TimeTable {
 		this.journeys = darwinData.pporttimetable.$$.journey.map(journey => new Journey(journey, this.locations))
 	}
 
-	public static async parse(xmlData: Buffer, xmlReferenceData: Buffer): Promise<TimeTable> {
+	public static async parse(xmlData: string, xmlReferenceData: string): Promise<TimeTable> {
 		log.debug("Parsing timetable data...")
-		const darwinData = await parseXML<DarwinTimeTable>(xmlData)
+		const darwinData = await parse<DarwinTimeTable>(xmlData)
 		log.debug("Parsing reference data...")
-		const darwinReferenceData = await parseXML<DarwinTimeTableReference>(xmlReferenceData)
+		const darwinReferenceData = await parse<DarwinTimeTableReference>(xmlReferenceData)
 		log.debug("Parsed timetable & reference data.")
 
 		await writeFile("data/parsed-timetable.json", JSON.stringify(darwinData, null, 1))

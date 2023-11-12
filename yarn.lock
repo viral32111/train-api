@@ -1578,6 +1578,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/luxon@npm:~3.3.0":
+  version: 3.3.4
+  resolution: "@types/luxon@npm:3.3.4"
+  checksum: d9ef0bdfa97cce2951107083ed0461ce92f0a12343d8853c44ae976ff153317fcfe76b3ada33abd820f1a124b6ce99e190183ba0267b239e18e5bcaf237e5bf9
+  languageName: node
+  linkType: hard
+
 "@types/markdown-it@npm:^12.2.3":
   version: 12.2.3
   resolution: "@types/markdown-it@npm:12.2.3"
@@ -1613,15 +1620,6 @@ __metadata:
   version: 10.0.3
   resolution: "@types/mocha@npm:10.0.3"
   checksum: 842235a90ec401d42b10bbdd1e4b040e529f96b6e4dc745ff44739f25e39f6dfb1c193660e139b3ba44b5d61b3b48891776ea776aed4506df0557a434151fde0
-  languageName: node
-  linkType: hard
-
-"@types/node-gzip@npm:^1.1.2":
-  version: 1.1.2
-  resolution: "@types/node-gzip@npm:1.1.2"
-  dependencies:
-    "@types/node": "npm:*"
-  checksum: 64db01ada82e52d728211b42e59055c2e4c63b4ddf76c839b21a03948bfbe5f8b4b945b20ee14ec6d33016e6514eea1aa72d7aeb5c7cc867cc1b2fb40cc2bc2d
   languageName: node
   linkType: hard
 
@@ -1949,7 +1947,6 @@ __metadata:
     "@types/express": "npm:^4.17.20"
     "@types/mocha": "npm:^10.0.3"
     "@types/node": "npm:^20.8.10"
-    "@types/node-gzip": "npm:^1.1.2"
     "@types/ws": "npm:^8.5.8"
     "@types/xml2js": "npm:^0.4.13"
     "@typescript-eslint/eslint-plugin": "npm:^6.9.1"
@@ -1958,6 +1955,7 @@ __metadata:
     chai: "npm:^4.3.10"
     chai-http: "npm:^4.4.0"
     cors: "npm:^2.8.5"
+    cron: "npm:^3.1.6"
     dotenv: "npm:^16.3.1"
     eslint: "npm:^8.52.0"
     eslint-config-prettier: "npm:^9.0.0"
@@ -1970,7 +1968,6 @@ __metadata:
     mocha: "npm:^10.2.0"
     moment: "npm:^2.29.4"
     mongodb: "npm:^6.2.0"
-    node-gzip: "npm:^1.1.2"
     prettier: "npm:^3.0.3"
     prettier-eslint: "npm:^16.1.2"
     redis: "npm:^4.6.10"
@@ -1979,6 +1976,7 @@ __metadata:
     utf-8-validate: "npm:^6.0.3"
     ws: "npm:^8.14.2"
     xml2js: "npm:^0.6.2"
+    zlib: "npm:^1.0.5"
   dependenciesMeta:
     bufferutil:
       optional: true
@@ -2560,6 +2558,16 @@ __metadata:
     object-assign: "npm:^4"
     vary: "npm:^1"
   checksum: 373702b7999409922da80de4a61938aabba6929aea5b6fd9096fefb9e8342f626c0ebd7507b0e8b0b311380744cc985f27edebc0a26e0ddb784b54e1085de761
+  languageName: node
+  linkType: hard
+
+"cron@npm:^3.1.6":
+  version: 3.1.6
+  resolution: "cron@npm:3.1.6"
+  dependencies:
+    "@types/luxon": "npm:~3.3.0"
+    luxon: "npm:~3.4.0"
+  checksum: f8328ce1052531bc14372acbfbddb38db33b30b29ac878d574b317779160b2947c9315c81dccb8a33724418cd86440a92269055037c96a2e917c867d57274009
   languageName: node
   linkType: hard
 
@@ -4084,6 +4092,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"luxon@npm:~3.4.0":
+  version: 3.4.3
+  resolution: "luxon@npm:3.4.3"
+  checksum: 65ad727684d367af9c8fcbde05ad7989ef2436a4496b62d993059baaa641e90a5fa74e98f34ee2ff29f7af7f2b27238ca78b87834f9068624e4133d786f87bc7
+  languageName: node
+  linkType: hard
+
 "make-fetch-happen@npm:^13.0.0":
   version: 13.0.0
   resolution: "make-fetch-happen@npm:13.0.0"
@@ -4519,13 +4534,6 @@ __metadata:
   bin:
     node-gyp: bin/node-gyp.js
   checksum: 6d18c65cae4f8cc87c8ff53bfa2626f43adfda5d5fbccbfe1c94c4e115f978f6c09072546ece2cffa36aa05ef30c261976cdcaa2c8beea069771f582b2989e93
-  languageName: node
-  linkType: hard
-
-"node-gzip@npm:^1.1.2":
-  version: 1.1.2
-  resolution: "node-gzip@npm:1.1.2"
-  checksum: c7aec81659bf69065bcfecb596293aaa3bd115ba328a2188a257f3640799f5ae8157ce82d93c17500494c695ff16e718308353ac628a9353679b2353f9e93402
   languageName: node
   linkType: hard
 
@@ -5847,5 +5855,12 @@ __metadata:
   version: 0.1.0
   resolution: "yocto-queue@npm:0.1.0"
   checksum: dceb44c28578b31641e13695d200d34ec4ab3966a5729814d5445b194933c096b7ced71494ce53a0e8820685d1d010df8b2422e5bf2cdea7e469d97ffbea306f
+  languageName: node
+  linkType: hard
+
+"zlib@npm:^1.0.5":
+  version: 1.0.5
+  resolution: "zlib@npm:1.0.5"
+  checksum: 34bd33f4fdcda34f57a1ab628ceb423bdf8ef07290f46cd944eedd9a66458cc24ccf3c770da73dc0f8d28016607d861290ac5c53d49113177f7c321838df2913
   languageName: node
   linkType: hard

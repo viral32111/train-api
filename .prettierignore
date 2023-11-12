@@ -19,6 +19,7 @@ lib/
 docs/
 *.tsbuildinfo
 *.d.ts
+*.js
 *.map
 
 # Temporary runtime data
