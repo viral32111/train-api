@@ -1,0 +1,31 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"group": "build",
+			"script": "lint",
+			"label": "Lint",
+			"detail": "Lint the code.",
+			"problemMatcher": [
+				"$tsc"
+			],
+			"presentation": {
+				"clear": true
+			}
+		},
+		{
+			"type": "npm",
+			"group": "build",
+			"script": "build",
+			"label": "Build",
+			"detail": "Build the project.",
+			"problemMatcher": [
+				"$tsc"
+			],
+			"presentation": {
+				"clear": true
+			}
+		}
+	]
+}
