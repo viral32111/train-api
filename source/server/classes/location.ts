@@ -1,4 +1,4 @@
-import { Location as DarwinLocation } from "../sources/darwin-push-port/types/reference/location.js"
+import { Location as DarwinLocation } from "../sources/national-rail-data-portal/darwin-push-port/types/reference/location.js"
 import { TrainOperatingCompany } from "./toc.js"
 
 export class Location {

@@ -5,7 +5,7 @@ import {
 	IntermediateCallingPoint,
 	IntermediatePassingPoint,
 	OriginPoint
-} from "../sources/darwin-push-port/types/time-table/points.js"
+} from "../sources/national-rail-data-portal/darwin-push-port/types/time-table/points.js"
 import { Location } from "./location.js"
 
 export class Point {

@@ -1,4 +1,4 @@
-import { TrainOperatingCompany as DarwinTrainOperatingCompany } from "../sources/darwin-push-port/types/reference/toc.js"
+import { TrainOperatingCompany as DarwinTrainOperatingCompany } from "../sources/national-rail-data-portal/darwin-push-port/types/reference/toc.js"
 
 // https://wiki.openraildata.com/index.php/TOC_Codes
 export class TrainOperatingCompany {

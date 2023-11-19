@@ -1,6 +1,6 @@
 import moment, { Moment } from "moment"
 
-import { Journey as DarwinJourney } from "../sources/darwin-push-port/types/time-table/journey.js"
+import { Journey as DarwinJourney } from "../sources/national-rail-data-portal/darwin-push-port/types/time-table/journey.js"
 import { Location } from "./location.js"
 import { Point } from "./point.js"
 

@@ -6,7 +6,7 @@ import log4js from "log4js"
 import moment from "moment"
 import { createClient } from "redis"
 
-import { TimeTable } from "../classes/timetable.js"
+import { TimeTable } from "../../../classes/timetable.js"
 import {
 	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_ACCESS_KEY,
 	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_BUCKET,
@@ -19,10 +19,10 @@ import {
 	REDIS_SERVER_ADDRESS,
 	REDIS_SERVER_PORT,
 	REDIS_USE_TLS
-} from "../environment.js"
-import { decompress } from "../helpers/decompress.js"
-import { createKey, splitKey } from "../helpers/redis.js"
-import { setTimeTable } from "../state.js"
+} from "../../../environment.js"
+import { decompress } from "../../../helpers/decompress.js"
+import { createKey, splitKey } from "../../../helpers/redis.js"
+import { setTimeTable } from "../../../state.js"
 
 // Why is the Redis client type so complicated?!
 type RedisClient = ReturnType<typeof createClient>

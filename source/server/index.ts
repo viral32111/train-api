@@ -5,7 +5,7 @@ import { CronJob } from "cron"
 import { EXPRESS_LISTEN_ADDRESS, EXPRESS_LISTEN_PORT, PACKAGE_FILE } from "./environment.js"
 import { app, finaliseExpress } from "./express.js"
 import { parsePackageVersion } from "./helpers/version.js"
-import { refresh } from "./sources/darwin-push-port.js"
+import { refresh } from "./sources/national-rail-data-portal/darwin-push-port/darwin-push-port.js"
 
 const log = log4js.getLogger("main")
 
