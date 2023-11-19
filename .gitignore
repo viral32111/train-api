@@ -21,6 +21,9 @@ docs/
 *.d.ts
 *.map
 
+# Temporary runtime data
+data/
+
 # Environment Variables
 .env*
 !.env.example

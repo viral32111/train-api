@@ -25,4 +25,11 @@ export const EXPRESS_LISTEN_ADDRESS = getEnvironmentVariable<string>("EXPRESS_LI
 export const EXPRESS_LISTEN_PORT = getEnvironmentVariable<number>("EXPRESS_LISTEN_PORT", 3000, 0, 65535)
 export const EXPRESS_MAX_REQUEST_SIZE = getEnvironmentVariable<number>("EXPRESS_MAX_REQUEST_SIZE", 1024 * 1024 * 1, 0)
 export const EXPRESS_AUTHORIZATION_TOKEN = getEnvironmentVariable<string>("EXPRESS_AUTHORIZATION_TOKEN")
+
+export const NATIONAL_RAIL_DATA_PORTAL_USER = getEnvironmentVariable<string>("NATIONAL_RAIL_DATA_PORTAL_USER")
+export const NATIONAL_RAIL_DATA_PORTAL_PASSWORD = getEnvironmentVariable<string>("NATIONAL_RAIL_DATA_PORTAL_PASSWORD")
+export const NATIONAL_RAIL_STATIC_FEEDS_API_BASE_URL = getEnvironmentVariable<string>(
+	"NATIONAL_RAIL_STATIC_FEEDS_API_BASE_URL",
+	"https://opendata.nationalrail.co.uk/api/staticfeeds"
+)
 log.info("Ensured all environment variables are set.")

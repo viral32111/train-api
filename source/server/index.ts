@@ -3,9 +3,17 @@ import "source-map-support/register"
 import log4js from "log4js"
 import "./log"
 
-import { EXPRESS_LISTEN_ADDRESS, EXPRESS_LISTEN_PORT, PACKAGE_FILE } from "./environment"
+import {
+	EXPRESS_LISTEN_ADDRESS,
+	EXPRESS_LISTEN_PORT,
+	NATIONAL_RAIL_DATA_PORTAL_PASSWORD,
+	NATIONAL_RAIL_DATA_PORTAL_USER,
+	NATIONAL_RAIL_STATIC_FEEDS_API_BASE_URL,
+	PACKAGE_FILE
+} from "./environment"
 import { app, finaliseExpress } from "./express"
 import { parsePackageVersion } from "./helpers/version"
+import { downloadStaticFeeds } from "./sources/national-rail-data-portal/static-feeds/static-feeds"
 
 const log = log4js.getLogger("main")
 
@@ -57,6 +65,20 @@ export const httpServer = app.listen(EXPRESS_LISTEN_PORT, EXPRESS_LISTEN_ADDRESS
 		log.debug("Stopping due to exit flag.")
 		//stopGracefully()
 	}
+
+	downloadStaticFeeds(
+		NATIONAL_RAIL_DATA_PORTAL_USER,
+		NATIONAL_RAIL_DATA_PORTAL_PASSWORD,
+		NATIONAL_RAIL_STATIC_FEEDS_API_BASE_URL
+	)
+		.then(() => {
+			log.info("Downloaded all static feeds from the National Rail Data Portal.")
+			stopGracefully()
+		})
+		.catch((error: unknown) => {
+			log.error("Failed to download all static feeds from the National Rail Data Portal: %s", error?.toString())
+			stopGracefully()
+		})
 })
 
 const stopGracefully = (): void => {
