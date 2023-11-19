@@ -783,6 +783,7 @@ __metadata:
     jsdoc: "npm:^4.0.2"
     log4js: "npm:^6.9.1"
     mocha: "npm:^10.2.0"
+    moment: "npm:^2.29.4"
     mongodb: "npm:^6.2.0"
     prettier: "npm:^3.0.3"
     prettier-eslint: "npm:^16.1.2"
@@ -3624,6 +3625,13 @@ __metadata:
     _mocha: bin/_mocha
     mocha: bin/mocha.js
   checksum: 145185435535ec7766932e9fa3def1520ffb895e7fa341e8592829844c4c9dd9fcb35db139d448c228b5ad3c2bedce50423ce760827b3054fafe6d47ef014937
+  languageName: node
+  linkType: hard
+
+"moment@npm:^2.29.4":
+  version: 2.29.4
+  resolution: "moment@npm:2.29.4"
+  checksum: 844c6f3ce42862ac9467c8ca4f5e48a00750078682cc5bda1bc0e50cc7ca88e2115a0f932d65a06e4a90e26cb78892be9b3ca3dd6546ca2c4d994cebb787fc2b
   languageName: node
   linkType: hard
 
