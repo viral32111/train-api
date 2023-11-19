@@ -1,13 +1,8 @@
 import moment, { Moment } from "moment"
 
+import { Journey as DarwinJourney } from "../sources/darwin-push-port/types/time-table/journey.js"
 import { Location } from "./location.js"
-import {
-	DarwinJourneyDestinationPoint,
-	DarwinJourneyIntermediateCallingPoint,
-	DarwinJourneyIntermediatePassingPoint,
-	DarwinJourneyOriginPoint,
-	Point
-} from "./point.js"
+import { Point } from "./point.js"
 
 export class Journey {
 	public readonly id: string // Train UID
@@ -122,33 +117,5 @@ export class Journey {
 		if (this.destinationPoint.location.tiploc === tiploc) return this.destinationPoint
 
 		return this.intermediatePoints.find(point => point.location.tiploc === tiploc)
-	}
-}
-
-export interface DarwinJourney {
-	$: {
-		rid: string // RTTI (Unique) Train Identifier
-		uid: string // Train Unique Identifier
-		trainId: string // Train Identifier (Headcode)
-		toc: string // ATOC Code
-
-		ssd: string // Scheduled Start Date
-
-		status?: string // Type of service (train/bus/ship)
-		trainCat?: string // Train category
-		isPassengerSvc?: string // Is Passenger Service?
-		qtrain?: string // Is this a Q train?
-
-		can?: string // Is Cancelled?
-		cancelReason?: string // Cancellation Reason
-	}
-	$$: {
-		or?: { $: DarwinJourneyOriginPoint }[] // Origin Point
-		opor?: { $: DarwinJourneyOriginPoint }[] // Operational Origin Point
-		pp?: { $: DarwinJourneyIntermediatePassingPoint }[] // Intermediate Passing Point
-		ip?: { $: DarwinJourneyIntermediateCallingPoint }[] // Intermediate Calling Point
-		opip?: { $: DarwinJourneyIntermediateCallingPoint }[] // Operational Intermediate Calling Point
-		dt?: { $: DarwinJourneyDestinationPoint }[] // Destination Point
-		opdt?: { $: DarwinJourneyDestinationPoint }[] // Operational Destination Point
 	}
 }

@@ -3,9 +3,11 @@ import { writeFile } from "fs/promises"
 import log4js from "log4js"
 
 import { parse } from "../helpers/xml.js"
-import { DarwinJourney, Journey } from "./journey.js"
-import { DarwinTimeTableReferenceLocation, Location } from "./location.js"
-import { DarwinTimeTableReferenceTOC, TrainOperatingCompany } from "./toc.js"
+import { Reference as DarwinReference } from "../sources/darwin-push-port/types/reference/reference.js"
+import { TimeTable as DarwinTimeTable } from "../sources/darwin-push-port/types/time-table/time-table.js"
+import { Journey } from "./journey.js"
+import { Location } from "./location.js"
+import { TrainOperatingCompany } from "./toc.js"
 
 const log = log4js.getLogger("timetable")
 
@@ -15,7 +17,7 @@ export class TimeTable {
 
 	public readonly journeys: Journey[] = []
 
-	public constructor(darwinData: DarwinTimeTable, darwinReferenceData: DarwinTimeTableReference) {
+	public constructor(darwinData: DarwinTimeTable, darwinReferenceData: DarwinReference) {
 		log.debug("Mapping operators...")
 		this.operators = darwinReferenceData.pporttimetableref.$$.tocref.map(toc => new TrainOperatingCompany(toc.$))
 
@@ -32,7 +34,7 @@ export class TimeTable {
 		log.debug("Parsing timetable data...")
 		const darwinData = await parse<DarwinTimeTable>(xmlData)
 		log.debug("Parsing reference data...")
-		const darwinReferenceData = await parse<DarwinTimeTableReference>(xmlReferenceData)
+		const darwinReferenceData = await parse<DarwinReference>(xmlReferenceData)
 		log.debug("Parsed timetable & reference data.")
 
 		await writeFile("data/parsed-timetable.json", JSON.stringify(darwinData, null, 1))
@@ -76,68 +78,5 @@ export class TimeTable {
 		})
 
 		return matchingJourneys
-	}
-}
-
-export interface DarwinTimeTable {
-	pporttimetable: {
-		$: {
-			timetableID: string
-		}
-		$$: {
-			journey: DarwinJourney[]
-		}
-	}
-}
-
-export interface DarwinTimeTableReference {
-	pporttimetableref: {
-		$: {
-			timetableId: string
-		}
-		$$: {
-			locationref: { $: DarwinTimeTableReferenceLocation }[] // TIPLOC to CRS/name
-			tocref: { $: DarwinTimeTableReferenceTOC }[] // TOC code to name
-			laterunningreasons: { $$: { reason: DarwinTimeTableReferenceReason[] } } // Late running reason code to text
-			cancellationreasons: { $$: { reason: DarwinTimeTableReferenceReason[] } } // Cancellation reason code to text
-			via: { $: DarwinTimeTableReferenceVia[] } // Vias
-			cissource: { $: DarwinTimeTableReferenceCIS[] } // CIS source codes to names
-			loadingcategories: { $$: { category: DarwinTimeTableReferenceLoadingCategory[] } } // Loading categories
-		}
-	}
-}
-
-export interface DarwinTimeTableReferenceReason {
-	code: string // Reason code
-	reasontext: string // Human-readable reason
-}
-
-export interface DarwinTimeTableReferenceVia {
-	at: string // TIPLOC
-	dest: string // TIPLOC
-
-	loc1: string // TIPLOC
-	loc2?: string // TIPLOC
-
-	viatext: string // Human-readable announcer message
-}
-
-export interface DarwinTimeTableReferenceCIS {
-	code: string // CIS source code
-	name: string // Human-readable name
-}
-
-export interface DarwinTimeTableReferenceLoadingCategory {
-	$: {
-		Code: string // Loading category code
-		Name: string // Human-readable message
-		Toc?: string // TOC (operator) code
-	}
-	$$: {
-		typicaldescription: string[]
-		expecteddescription: string[]
-		definition: string[]
-		colour?: string[]
-		image?: string[]
 	}
 }

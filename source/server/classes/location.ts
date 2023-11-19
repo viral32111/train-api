@@ -1,3 +1,4 @@
+import { Location as DarwinLocation } from "../sources/darwin-push-port/types/reference/location.js"
 import { TrainOperatingCompany } from "./toc.js"
 
 export class Location {
@@ -10,7 +11,7 @@ export class Location {
 
 	public readonly isStation: boolean = false
 
-	public constructor(darwinData: DarwinTimeTableReferenceLocation, operators: TrainOperatingCompany[]) {
+	public constructor(darwinData: DarwinLocation, operators: TrainOperatingCompany[]) {
 		this.tiploc = darwinData.tpl
 
 		this.crs = darwinData.crs
@@ -25,13 +26,4 @@ export class Location {
 
 		this.isStation = this.crs !== undefined && this.name !== undefined
 	}
-}
-
-export interface DarwinTimeTableReferenceLocation {
-	tpl: string // TIPLOC (timing point location)
-
-	crs?: string // CRS (computer reservation system) / NRS (national reservation system) code
-	locname: string // Human-readable name
-
-	toc?: string // TOC (operator) code
 }

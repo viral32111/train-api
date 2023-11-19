@@ -1,6 +1,6 @@
 import { Status } from "../../../package/index.js"
-import { getTimeTable } from "../../classes/darwin-push-port.js"
 import { router } from "../../express.js"
+import { getTimeTable } from "../../state.js"
 import { BaseResponse, ErrorResponse } from "../../types/response.js"
 
 type Filter = "station" | null

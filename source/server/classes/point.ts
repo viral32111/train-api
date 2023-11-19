@@ -1,5 +1,11 @@
 import moment, { Moment } from "moment"
 
+import {
+	DestinationPoint,
+	IntermediateCallingPoint,
+	IntermediatePassingPoint,
+	OriginPoint
+} from "../sources/darwin-push-port/types/time-table/points.js"
 import { Location } from "./location.js"
 
 export class Point {
@@ -20,11 +26,7 @@ export class Point {
 	public readonly falseDestination?: string // TIPLOC of False Destination
 
 	public constructor(
-		darwinData:
-			| DarwinJourneyOriginPoint
-			| DarwinJourneyIntermediatePassingPoint
-			| DarwinJourneyIntermediateCallingPoint
-			| DarwinJourneyDestinationPoint,
+		darwinData: OriginPoint | IntermediatePassingPoint | IntermediateCallingPoint | DestinationPoint,
 		date: Moment,
 		locations: Location[]
 	) {
@@ -71,58 +73,4 @@ export class Point {
 		if ("rdelay" in darwinData && darwinData.rdelay) this.changeRouteDelay = parseInt(darwinData.rdelay, 10)
 		if ("fd" in darwinData && darwinData.fd) this.falseDestination = darwinData.fd
 	}
-}
-
-export interface DarwinJourneyPoint {
-	tpl: string // TIPLOC
-
-	act?: string // Activity Code
-	planAct?: string // Planned Activity Code
-
-	can?: string // Cancelled?
-
-	plat?: string // Platform Number
-
-	wta?: string // Working Scheduled Arrival Time
-	wtd?: string // Working Scheduled Departure Time
-	wtp?: string // Working Scheduled Passing Time
-
-	pta?: string // Public Scheduled Arrival Time
-	atd?: string // Public Scheduled Departure Time
-
-	rdelay?: string // Delay due to change of route
-	fd?: string // TIPLOC of False Destination
-}
-
-export interface DarwinJourneyOriginPoint extends DarwinJourneyPoint {
-	plat?: string // Platform Number
-
-	wtd: string // Working Scheduled Departure Time
-	ptd?: string // Public Scheduled Departure Time
-}
-
-export interface DarwinJourneyIntermediatePassingPoint extends DarwinJourneyPoint {
-	plat?: string // Platform Number
-
-	wtp: string // Working Scheduled Passing Time
-
-	pta?: string // Public Scheduled Arrival Time
-	ptd?: string // Public Scheduled Departure Time
-}
-
-export interface DarwinJourneyIntermediateCallingPoint extends DarwinJourneyPoint {
-	plat: string // Platform Number
-
-	wta: string // Working Scheduled Arrival Time
-	wtd: string // Working Scheduled Departure Time
-
-	pta?: string // Public Scheduled Arrival Time
-	ptd?: string // Public Scheduled Departure Time
-}
-
-export interface DarwinJourneyDestinationPoint extends DarwinJourneyPoint {
-	plat?: string // Platform Number
-
-	wta: string // Working Scheduled Arrival Time
-	pta?: string // Public Scheduled Arrival Time
 }

@@ -2,10 +2,10 @@ import log4js from "log4js"
 import "./log.js"
 
 import { CronJob } from "cron"
-import { refresh } from "./classes/darwin-push-port.js"
 import { EXPRESS_LISTEN_ADDRESS, EXPRESS_LISTEN_PORT, PACKAGE_FILE } from "./environment.js"
 import { app, finaliseExpress } from "./express.js"
 import { parsePackageVersion } from "./helpers/version.js"
+import { refresh } from "./sources/darwin-push-port.js"
 
 const log = log4js.getLogger("main")
 

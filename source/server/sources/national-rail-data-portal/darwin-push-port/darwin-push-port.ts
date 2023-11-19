@@ -6,6 +6,7 @@ import log4js from "log4js"
 import moment from "moment"
 import { createClient } from "redis"
 
+import { TimeTable } from "../classes/timetable.js"
 import {
 	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_ACCESS_KEY,
 	NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_BUCKET,
@@ -21,15 +22,12 @@ import {
 } from "../environment.js"
 import { decompress } from "../helpers/decompress.js"
 import { createKey, splitKey } from "../helpers/redis.js"
-import { TimeTable } from "./timetable.js"
+import { setTimeTable } from "../state.js"
 
 // Why is the Redis client type so complicated?!
 type RedisClient = ReturnType<typeof createClient>
 
 const log = log4js.getLogger("darwin-push-port")
-
-let timeTable: TimeTable | null = null
-export const getTimeTable = (): TimeTable | null => timeTable
 
 /**
  * Refreshes all timetable data from Darwin Push Port.
@@ -68,7 +66,8 @@ export const refresh = async (): Promise<void> => {
 	log.info("Cached S3 objects.")
 
 	log.debug("Creating timetable...")
-	timeTable = await createTimeTableFromRedis(redis, redisKeyNamespace)
+	const timeTable = await createTimeTableFromRedis(redis, redisKeyNamespace)
+	setTimeTable(timeTable)
 	log.info("Created timetable.")
 
 	log.debug("Cleaning up Redis client...")
