@@ -538,12 +538,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/ws@npm:^8.5.8":
-  version: 8.5.8
-  resolution: "@types/ws@npm:8.5.8"
+"@types/ws@npm:^8.5.10":
+  version: 8.5.10
+  resolution: "@types/ws@npm:8.5.10"
   dependencies:
     "@types/node": "npm:*"
-  checksum: a5b4a2b95acf1f3790add5fe1b72388628bf0e7643f29f265483b3dec506ab7d9decae74174fbaa0d43984f32c697ca8797959a1a560e8c9d54204295b1f7ff5
+  checksum: e9af279b984c4a04ab53295a40aa95c3e9685f04888df5c6920860d1dd073fcc57c7bd33578a04b285b2c655a0b52258d34bee0a20569dca8defb8393e1e5d29
   languageName: node
   linkType: hard
 
@@ -766,7 +766,7 @@ __metadata:
     "@types/mocha": "npm:^10.0.3"
     "@types/node": "npm:^20.8.10"
     "@types/source-map-support": "npm:^0.5.9"
-    "@types/ws": "npm:^8.5.8"
+    "@types/ws": "npm:^8.5.10"
     "@typescript-eslint/eslint-plugin": "npm:^6.9.1"
     "@typescript-eslint/parser": "npm:^6.9.1"
     bufferutil: "npm:^4.0.8"
