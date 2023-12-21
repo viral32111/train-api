@@ -1,7 +1,7 @@
-import { Status } from "../../shared/types/status"
-import { router } from "../express"
-import { packageVersion } from "../index"
-import { BaseResponse } from "../types/response"
+import { Status } from "../../shared/types/status.js"
+import { router } from "../express.js"
+import { packageVersion } from "../index.js"
+import { BaseResponse } from "../types/response.js"
 
 interface HelloResponse extends BaseResponse {
 	data: {

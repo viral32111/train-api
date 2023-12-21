@@ -15,12 +15,16 @@ yarn-*.log
 
 # Builds
 dist/
-bundle/
 lib/
 docs/
 *.tsbuildinfo
 *.d.ts
+*.js
 *.map
+
+# Temporary runtime data
+data/
+logs/
 
 # Package Configuration
 *.config.*s

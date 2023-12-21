@@ -1,13 +1,14 @@
-import "source-map-support/register"
-
 import log4js from "log4js"
-import "./log"
+import "./log.js"
 
-import { EXPRESS_LISTEN_ADDRESS, EXPRESS_LISTEN_PORT, PACKAGE_FILE } from "./environment"
-import { app, finaliseExpress } from "./express"
-import { parsePackageVersion } from "./helpers/version"
+import { CronJob } from "cron"
+import { EXPRESS_LISTEN_ADDRESS, EXPRESS_LISTEN_PORT, LOG_FILE_PATH, PACKAGE_FILE } from "./environment.js"
+import { app, finaliseExpress } from "./express.js"
+import { parsePackageVersion } from "./helpers/version.js"
+import { refresh } from "./sources/national-rail-data-portal/darwin-push-port/darwin-push-port.js"
 
 const log = log4js.getLogger("main")
+log.info("Logging to file '%s'.", LOG_FILE_PATH)
 
 // Log all unhandled errors
 process.on("uncaughtException", error => {
@@ -54,12 +55,29 @@ export const httpServer = app.listen(EXPRESS_LISTEN_PORT, EXPRESS_LISTEN_ADDRESS
 	*/
 
 	if (process.argv.includes("--exit")) {
-		log.debug("Stopping due to exit flag.")
-		//stopGracefully()
+		log.info("Stopping due to exit flag.")
+		stopGracefully()
+		return
 	}
+
+	new CronJob(
+		"0 * * * *", // Every hour
+		async () => {
+			log.info("Refreshing Darwin Push Port data...")
+
+			await refresh()
+		},
+		() => {
+			log.info("Refreshed Darwin Push Port data.")
+		},
+		true,
+		"utc",
+		undefined,
+		true // Run immediately
+	)
 })
 
-const stopGracefully = (): void => {
+export const stopGracefully = (): void => {
 	log.info("Stopping...")
 
 	log.debug("Stopping Express...")
@@ -71,7 +89,11 @@ const stopGracefully = (): void => {
 		await mongoClient.close()
 		log.info("Disconnected from MongoDB.")
 		*/
+
+		//log.debug("Disconnecting Redis client...")
 	})
+
+	process.exit(0)
 }
 
 process.once("SIGINT", stopGracefully)

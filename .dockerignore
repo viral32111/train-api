@@ -23,9 +23,12 @@ yarn-*.log
 source/
 
 # Builds
-bundle/
 lib/
 docs/
+
+# Temporary runtime data
+data/
+logs/
 
 # Package Configuration
 *.config.*s

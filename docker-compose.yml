@@ -15,10 +15,30 @@ services:
         protocol: tcp
     environment:
       - MONGO_INITDB_ROOT_USERNAME=docker
-      - MONGO_INITDB_ROOT_PASSWORD=
+      - MONGO_INITDB_ROOT_PASSWORD=60254221062724713635efe2c435834a
       - MONGO_INITDB_DATABASE=train-api
     volumes:
-      - mongodb:/data/db
+      - type: volume
+        source: mongodb
+        target: /data/db
+
+  redis:
+    container_name: redis
+    image: redis:7.2-bookworm
+    pull_policy: always
+    restart: on-failure
+    networks:
+      - train-api
+    ports:
+      - target: 6379
+        published: 6379
+        host_ip: 127.0.0.1
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: ./redis.conf
+        target: /usr/local/etc/redis/redis.conf
+        read_only: true
 
   train-api:
     container_name: train-api
@@ -33,12 +53,12 @@ services:
         host_ip: 127.0.0.1
         protocol: tcp
     environment:
-      - EXPRESS_AUTHORIZATION_TOKEN=
+      - EXPRESS_AUTHORIZATION_TOKEN=8151beb8466f5374bdcbfc59a0586dd1
       - MONGODB_SERVER_ADDRESS=mongodb
       - MONGODB_AUTH_USER=docker
-      - MONGODB_AUTH_PASSWORD=
+      - MONGODB_AUTH_PASSWORD=60254221062724713635efe2c435834a
       - MONGODB_DATABASE=train-api
-      - MONGODB_SECRET_KEY=
+      - MONGODB_SECRET_KEY=3b6b312e1082de1b3d69f94a044a0df0
     build:
       context: .
       dockerfile: Dockerfile

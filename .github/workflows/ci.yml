@@ -85,7 +85,6 @@ jobs:
           path: |
             .yarn/releases
             dist/
-            bundle/
             lib/
             docs/
             .env.example

@@ -2,10 +2,11 @@ import cors from "cors"
 import express from "express"
 import log4js from "log4js"
 
-import { Status } from "../shared/types/status"
-import { SemanticVersion } from "./classes/version"
-import { EXPRESS_AUTHORIZATION_TOKEN, EXPRESS_MAX_REQUEST_SIZE } from "./environment"
-import { ErrorResponse } from "./types/response"
+import { Status } from "../shared/types/status.js"
+import { SemanticVersion } from "./classes/version.js"
+import { EXPRESS_AUTHORIZATION_TOKEN, EXPRESS_MAX_REQUEST_SIZE } from "./environment.js"
+import { registerRoutes as registerLocationRoutes } from "./routes/darwin-push-port/locations.js"
+import { ErrorResponse } from "./types/response.js"
 
 const log = log4js.getLogger("express")
 log.debug("Configuring Express...")
@@ -77,7 +78,7 @@ app.use((request, response, next) => {
 		return
 	}
 
-	const [scheme, value] = authorizationHeader.split(" ", 1)
+	const [scheme, value] = authorizationHeader.split(" ", 2)
 
 	// Incorrect scheme
 	if (scheme !== expectedAuthorizationScheme) {
@@ -114,7 +115,7 @@ app.use((request, response, next) => {
 
 // Import routes
 log.debug("Importing API routes...")
-import("./routes/hello")
+registerLocationRoutes(router)
 
 /**
  * Sets up the aspects of the Express application that require the package version.
