@@ -73,13 +73,13 @@ export class Journey {
 			return a.workingScheduledArrivalTime.diff(b.workingScheduledArrivalTime)
 		})
 
-		if (!this.originPoint.location.tiploc)
+		if (!this.originPoint.location.timingPointLocationCode)
 			throw new Error(
 				`Journey (service ${this.headCode} / ${this.id}) has no origin point TIPLOC: '${JSON.stringify(
 					darwinData
 				)}'`
 			)
-		if (!this.destinationPoint.location.tiploc)
+		if (!this.destinationPoint.location.timingPointLocationCode)
 			throw new Error(
 				`Journey (service ${this.headCode} / ${this.id}) has no destination point TIPLOC: '${JSON.stringify(
 					darwinData
@@ -102,20 +102,25 @@ export class Journey {
 	}
 
 	public toString = (): string =>
-		`${this.headCode} (${this.id}) ${this.originPoint.location.crs ?? this.originPoint.location.tiploc} (${
-			this.originPoint.location.name ?? this.originPoint.location.tiploc
+		`${this.headCode} (${this.id}) ${
+			this.originPoint.location.computerReservationSystemCode ?? this.originPoint.location.timingPointLocationCode
+		} (${
+			this.originPoint.location.name ?? this.originPoint.location.timingPointLocationCode
 		}) @ ${this.originPoint.workingScheduledDepartureTime?.format("DD/MM/YYYY HH:mm:ss")} [${
 			this.originPoint.location.operator?.name ?? "?"
-		}] -> ${this.destinationPoint.location.crs ?? this.destinationPoint.location.tiploc} (${
-			this.destinationPoint.location.name ?? this.destinationPoint.location.tiploc
+		}] -> ${
+			this.destinationPoint.location.computerReservationSystemCode ??
+			this.destinationPoint.location.timingPointLocationCode
+		} (${
+			this.destinationPoint.location.name ?? this.destinationPoint.location.timingPointLocationCode
 		}) @ ${this.destinationPoint.workingScheduledArrivalTime?.format("DD/MM/YYYY HH:mm:ss")} [${
 			this.destinationPoint.location.operator?.name ?? "?"
 		}]`
 
 	public getCallingPoint(tiploc: string): Point | undefined {
-		if (this.originPoint.location.tiploc === tiploc) return this.originPoint
-		if (this.destinationPoint.location.tiploc === tiploc) return this.destinationPoint
+		if (this.originPoint.location.timingPointLocationCode === tiploc) return this.originPoint
+		if (this.destinationPoint.location.timingPointLocationCode === tiploc) return this.destinationPoint
 
-		return this.intermediatePoints.find(point => point.location.tiploc === tiploc)
+		return this.intermediatePoints.find(point => point.location.timingPointLocationCode === tiploc)
 	}
 }

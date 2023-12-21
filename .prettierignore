@@ -24,6 +24,7 @@ docs/
 
 # Temporary runtime data
 data/
+logs/
 
 # Package Configuration
 *.config.*s

@@ -20,14 +20,17 @@ export class TimeTable {
 	public constructor(darwinData: DarwinTimeTable, darwinReferenceData: DarwinReference) {
 		log.debug("Mapping operators...")
 		this.operators = darwinReferenceData.pporttimetableref.$$.tocref.map(toc => new TrainOperatingCompany(toc.$))
+		log.debug("Mapped %d operator(s).", this.operators.length)
 
 		log.debug("Mapping locations...")
 		this.locations = darwinReferenceData.pporttimetableref.$$.locationref.map(
 			location => new Location(location.$, this.operators)
 		)
+		log.debug("Mapped %d location(s).", this.locations.length)
 
 		log.debug("Mapping journeys...")
 		this.journeys = darwinData.pporttimetable.$$.journey.map(journey => new Journey(journey, this.locations))
+		log.debug("Mapped %d journey(s).", this.journeys.length)
 	}
 
 	public static async parse(xmlData: string, xmlReferenceData: string): Promise<TimeTable> {
@@ -49,16 +52,16 @@ export class TimeTable {
 
 		for (const journey of this.journeys) {
 			if (
-				journey.originPoint.location.tiploc === originTiploc &&
-				journey.destinationPoint.location.tiploc === destinationTiploc
+				journey.originPoint.location.timingPointLocationCode === originTiploc &&
+				journey.destinationPoint.location.timingPointLocationCode === destinationTiploc
 			) {
 				matchingJourneys.push(journey)
 				continue
 			}
 
 			if (
-				journey.destinationPoint.location.tiploc === originTiploc &&
-				journey.originPoint.location.tiploc === destinationTiploc
+				journey.destinationPoint.location.timingPointLocationCode === originTiploc &&
+				journey.originPoint.location.timingPointLocationCode === destinationTiploc
 			) {
 				matchingJourneys.push(journey)
 				continue

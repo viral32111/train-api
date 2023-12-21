@@ -23,6 +23,11 @@ log.debug("Ensuring all environment variables are set...")
 
 export const PACKAGE_FILE = getEnvironmentVariable<string>("PACKAGE_FILE", resolve(currentDirectory, "package.json"))
 
+export const LOG_FILE_PATH = getEnvironmentVariable<string>(
+	"LOG_FILE_PATH",
+	resolve(currentDirectory, "logs", "server.log")
+)
+
 export const EXPRESS_LISTEN_ADDRESS = getEnvironmentVariable<string>("EXPRESS_LISTEN_ADDRESS", "0.0.0.0")
 export const EXPRESS_LISTEN_PORT = getEnvironmentVariable<number>("EXPRESS_LISTEN_PORT", 3000, 0, 65535)
 export const EXPRESS_MAX_REQUEST_SIZE = getEnvironmentVariable<number>("EXPRESS_MAX_REQUEST_SIZE", 1024 * 1024 * 1, 0)

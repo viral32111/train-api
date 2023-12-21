@@ -30,7 +30,7 @@ export const getEnvironmentVariable = <Type>(
 		)
 
 	if (!value) {
-		log.debug(
+		log.warn(
 			"Environment variable '%s' is not set or otherwise invalid, using default value '%s'.",
 			name,
 			defaultValue

@@ -22,6 +22,7 @@ import {
 } from "../../../environment.js"
 import { decompress } from "../../../helpers/decompress.js"
 import { createKey, splitKey } from "../../../helpers/redis.js"
+import { isDebug } from "../../../log.js"
 import { setTimeTable } from "../../../state.js"
 
 // Why is the Redis client type so complicated?!
@@ -55,15 +56,15 @@ export const refresh = async (): Promise<void> => {
 
 	const redisKeyNamespace = "darwin-push-port"
 
-	log.debug("Caching S3 objects...")
-	await cacheS3ObjectsInRedis(
+	log.debug("Downloading S3 objects...")
+	await downloadS3ObjectsToRedis(
 		s3,
 		redis,
 		NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_BUCKET,
 		NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_OBJECT_PREFIX,
 		redisKeyNamespace
 	)
-	log.info("Cached S3 objects.")
+	log.info("Downloaded S3 objects.")
 
 	log.debug("Creating timetable...")
 	const timeTable = await createTimeTableFromRedis(redis, redisKeyNamespace)
@@ -84,7 +85,7 @@ export const refresh = async (): Promise<void> => {
  * @param redis The Redis client.
  * @param redisKeyNamespace The namespace to use for Redis keys.
  * @param redisKeyDelimiter The delimiter to use for Redis keys.
- * @returns
+ * @returns A timetable created from the latest timetable & reference files in Redis.
  */
 const createTimeTableFromRedis = async (
 	redis: RedisClient,
@@ -92,7 +93,7 @@ const createTimeTableFromRedis = async (
 ): Promise<TimeTable> => {
 	log.debug("Finding keys in Redis...")
 	const redisKeys = await redis.keys(createKey([redisKeyNamespace, "*"]))
-	log.debug("Found %d key(s) in Redis.", redisKeys.length)
+	log.debug("Found %d key(s) in Redis: '%s'.", redisKeys.length, redisKeys.join(", "))
 
 	log.debug("Splitting keys into parts...")
 	const darwinObjectNames = redisKeys.map(key => {
@@ -102,16 +103,28 @@ const createTimeTableFromRedis = async (
 		return keyParts[1]
 	})
 
-	log.debug("Sorting %d Darwin Push Port object(s) by name...", redisKeys.length)
-	darwinObjectNames.sort((a, b) => {
+	const uniqueDarwinObjectNames = [...new Set(darwinObjectNames)]
+	log.debug(
+		"Reduced to %d unique Darwin Push Port object(s): '%s'.",
+		uniqueDarwinObjectNames.length,
+		uniqueDarwinObjectNames.join(", ")
+	)
+
+	log.debug("Sorting %d Darwin Push Port object(s) by date...", uniqueDarwinObjectNames.length)
+	uniqueDarwinObjectNames.sort((a, b) => {
 		const aDate = moment(a, "YYYYMMDDHHmmss")
 		const bDate = moment(b, "YYYYMMDDHHmmss")
 
 		return bDate.unix() - aDate.unix()
 	})
+	log.debug(
+		"Sorted %d Darwin Push Port object(s): '%s'.",
+		uniqueDarwinObjectNames.length,
+		uniqueDarwinObjectNames.join(", ")
+	)
 
-	const latestTimeTableName = darwinObjectNames.find(name => name.match(/\d+_v8$/))
-	const latestReferenceName = darwinObjectNames.find(key => key.match(/\d+_ref_v4$/))
+	const latestTimeTableName = uniqueDarwinObjectNames.find(name => name.match(/\d+_v8$/))
+	const latestReferenceName = uniqueDarwinObjectNames.find(key => key.match(/\d+_ref_v4$/))
 	if (!latestTimeTableName || !latestReferenceName)
 		throw new Error("Failed to find latest timetable & reference objects!")
 	log.debug(
@@ -120,34 +133,35 @@ const createTimeTableFromRedis = async (
 		latestReferenceName
 	)
 
-	const latestTimeTableXML = await redis.get(latestTimeTableName)
+	const latestTimeTableXML = await redis.get(createKey([redisKeyNamespace, latestTimeTableName]))
 	if (!latestTimeTableXML) throw new Error("Failed to fetch latest timetable XML in Redis!")
 
-	const latestReferenceXML = await redis.get(latestReferenceName)
+	const latestReferenceXML = await redis.get(createKey([redisKeyNamespace, latestReferenceName]))
 	if (!latestReferenceXML) throw new Error("Failed to fetch latest reference XML in Redis!")
 
-	// Temporary to aid debugging
-	await writeFile("data/latest-timetable.xml", latestTimeTableXML)
-	await writeFile("data/latest-reference.xml", latestReferenceXML)
-	log.debug("Wrote latest timetable & reference files to disk.")
+	if (isDebug) {
+		await writeFile("data/latest-timetable.xml", latestTimeTableXML)
+		await writeFile("data/latest-reference.xml", latestReferenceXML)
+		log.debug("Wrote latest timetable & reference files to disk.")
+	}
 
 	return await TimeTable.parse(latestTimeTableXML, latestReferenceXML)
 }
 
 /**
- * Caches all S3 objects in Redis.
+ * Downloads all S3 objects to Redis.
  * @param s3 The S3 client.
  * @param redis The Redis client.
  * @param redisKeyNamespace The namespace to use for Redis keys.
- * @param skipCacheCheck Whether to skip checking if the S3 object is already cached.
+ * @param skipDownloadCheck Whether to skip checking if the S3 object is already downloaded.
  */
-const cacheS3ObjectsInRedis = async (
+const downloadS3ObjectsToRedis = async (
 	s3: S3Client,
 	redis: RedisClient,
 	s3BucketName: string,
 	s3ObjectPrefix?: string,
 	redisKeyNamespace = "darwin-push-port",
-	skipCacheCheck = false
+	skipDownloadCheck = false
 ): Promise<void> => {
 	log.debug("Listing objects with prefix '%s' in S3 bucket '%s'...", s3ObjectPrefix, s3BucketName)
 	const listS3ObjectsResponse = await s3.send(
@@ -183,28 +197,34 @@ const cacheS3ObjectsInRedis = async (
 			continue
 		}
 
-		if (!skipCacheCheck) {
-			log.debug("Checking if S3 object '%s' is cached...", s3Object.Key)
+		if (!skipDownloadCheck) {
+			log.debug("Checking if S3 object '%s' is already downloaded...", s3Object.Key)
 
 			if (s3Object.ETag) {
-				const cachedETag = await redis.get(createKey([redisKeyNamespace, fileNameWithoutXMLExtension, "etag"]))
-				if (cachedETag) {
-					if (cachedETag === s3Object.ETag) {
+				const etagInRedis = await redis.get(createKey([redisKeyNamespace, fileNameWithoutXMLExtension, "etag"]))
+				if (etagInRedis) {
+					if (etagInRedis === s3Object.ETag) {
 						log.debug(
-							"Skipping download of S3 object '%s' as it is already cached (e-tag matches).",
-							s3Object.Key
+							"Skipping download of S3 object '%s' as it is already downloaded (e-tag '%s' matches).",
+							s3Object.Key,
+							etagInRedis
 						)
 						continue
 					}
-				} else log.warn("Cached S3 object '%s' does not have an e-tag!", s3Object.Key)
+				} else log.warn("Stored S3 object '%s' does not have an e-tag!", s3Object.Key)
 			} else log.warn("Cannot check cache of S3 object '%s' via e-tag!", s3Object.Key)
 
-			const isCachedInRedis = await redis.get(createKey([redisKeyNamespace, fileNameWithoutXMLExtension]))
-			if (isCachedInRedis) {
-				log.debug("Skipping download of S3 object '%s' as it is already cached (key exists).", s3Object.Key)
+			const redisKey = createKey([redisKeyNamespace, fileNameWithoutXMLExtension])
+			const isAlreadyInRedis = await redis.get(redisKey)
+			if (isAlreadyInRedis) {
+				log.debug(
+					"Skipping download of S3 object '%s' as it is already downloaded (key '%s' exists).",
+					s3Object.Key,
+					redisKey
+				)
 				continue
 			}
-		} else log.debug("Skipping cache check of S3 object '%s'.", s3Object.Key)
+		} else log.debug("Skipping download check of S3 object '%s'.", s3Object.Key)
 
 		log.debug("Downloading S3 object '%s'...", s3Object.Key)
 		const downloadS3ObjectResponse = await s3.send(
@@ -214,7 +234,7 @@ const cacheS3ObjectsInRedis = async (
 			})
 		)
 		if (!downloadS3ObjectResponse.Body) {
-			log.warn("Skipping caching of S3 object '%s' as it failed to download!", s3Object.Key)
+			log.warn("Skipping download of S3 object '%s' as it failed to download!", s3Object.Key)
 			continue
 		}
 
@@ -224,15 +244,33 @@ const cacheS3ObjectsInRedis = async (
 
 		if (isCompressed) {
 			s3ObjectBuffer = await decompress(s3ObjectBuffer)
-			log.info("Decompressed S3 object '%s' (%d bytes).", s3Object.Key, s3ObjectBuffer.length)
+			log.info(
+				"Decompressed S3 object '%s' (%d bytes): '%s...'.",
+				s3Object.Key,
+				s3ObjectBuffer.length,
+				s3ObjectBuffer.subarray(0, 13).toString("utf8")
+			)
 		}
 
 		const s3ObjectUTF8 = s3ObjectBuffer.toString("utf8")
 		log.debug("Decoded S3 object '%s' as UTF-8 (%d bytes).", s3Object.Key, s3ObjectUTF8.length)
 
+		const expirySeconds = 60 * 60 * 24 // 24 hours
+
 		await redis.set(createKey([redisKeyNamespace, fileNameWithoutXMLExtension]), s3ObjectUTF8)
-		await redis.expire(createKey([redisKeyNamespace, fileNameWithoutXMLExtension]), 60 * 60 * 24) // 24 hours
-		log.debug("Cached S3 object '%s' in Redis.", s3Object.Key)
+		await redis.expire(createKey([redisKeyNamespace, fileNameWithoutXMLExtension]), expirySeconds)
+		log.debug(
+			"Stored S3 object '%s' in Redis (%d bytes) for %d second(s).",
+			s3Object.Key,
+			s3ObjectUTF8.length,
+			expirySeconds
+		)
+
+		if (s3Object.ETag) {
+			await redis.set(createKey([redisKeyNamespace, fileNameWithoutXMLExtension, "etag"]), s3Object.ETag)
+			await redis.expire(createKey([redisKeyNamespace, fileNameWithoutXMLExtension, "etag"]), expirySeconds)
+			log.debug("Stored e-tag '%s' for S3 object '%s' in Redis.", s3Object.ETag, s3Object.Key)
+		}
 	}
 }
 

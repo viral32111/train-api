@@ -30,7 +30,7 @@ export class Point {
 		date: Moment,
 		locations: Location[]
 	) {
-		const location = locations.find(location => location.tiploc === darwinData.tpl)
+		const location = locations.find(location => location.timingPointLocationCode === darwinData.tpl)
 		if (!location) throw new Error(`Unknown location '${darwinData.tpl}'!`)
 		this.location = location
 

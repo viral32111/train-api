@@ -22,6 +22,7 @@ docs/
 
 # Temporary runtime data
 data/
+logs/
 
 # Environment Variables
 .env*

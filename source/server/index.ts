@@ -2,12 +2,13 @@ import log4js from "log4js"
 import "./log.js"
 
 import { CronJob } from "cron"
-import { EXPRESS_LISTEN_ADDRESS, EXPRESS_LISTEN_PORT, PACKAGE_FILE } from "./environment.js"
+import { EXPRESS_LISTEN_ADDRESS, EXPRESS_LISTEN_PORT, LOG_FILE_PATH, PACKAGE_FILE } from "./environment.js"
 import { app, finaliseExpress } from "./express.js"
 import { parsePackageVersion } from "./helpers/version.js"
 import { refresh } from "./sources/national-rail-data-portal/darwin-push-port/darwin-push-port.js"
 
 const log = log4js.getLogger("main")
+log.info("Logging to file '%s'.", LOG_FILE_PATH)
 
 // Log all unhandled errors
 process.on("uncaughtException", error => {
@@ -72,7 +73,7 @@ export const httpServer = app.listen(EXPRESS_LISTEN_PORT, EXPRESS_LISTEN_ADDRESS
 		true,
 		"utc",
 		undefined,
-		true
+		true // Run immediately
 	)
 })
 
@@ -91,6 +92,8 @@ export const stopGracefully = (): void => {
 
 		//log.debug("Disconnecting Redis client...")
 	})
+
+	process.exit(0)
 }
 
 process.once("SIGINT", stopGracefully)

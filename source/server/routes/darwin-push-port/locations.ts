@@ -1,53 +1,52 @@
+import { Router } from "express"
 import { Status } from "../../../package/index.js"
-import { router } from "../../express.js"
+import { LocationJson } from "../../classes/location.js"
 import { getTimeTable } from "../../state.js"
 import { BaseResponse, ErrorResponse } from "../../types/response.js"
 
-type Filter = "station" | null
-
 interface LocationsResponse extends BaseResponse {
 	data: {
-		filter: Filter
-		locations: {
-			tiploc: string
-			crs: string | null
-			name: string | null
-			operator: string | null
-			coordinates: {
-				latitude: number | null
-				longitude: number | null
-			}
-			address: {
-				number: string | null
-				street: string | null
-				town: string | null
-				county: string | null
-				country: string | null
-				postcode: string | null
-			}
-		}[]
+		type: string
+		locations: LocationJson[]
 	}
 }
 
-router.get("/locations", (request, response) => {
-	const query = request.query as { filter: Filter }
+export const registerRoutes = (expressRouter: Router): void => {
+	expressRouter.get("/locations", (request, response) => {
+		const query = request.query as { type?: string }
 
-	const timeTable = getTimeTable()
-	if (!timeTable)
-		return response.status(503).send({
-			status: Status.LoadingDarwinPushPortTimeTable,
+		const timeTable = getTimeTable()
+		if (!timeTable)
+			return response.status(503).send({
+				status: Status.LoadingDarwinPushPortTimeTable,
+				data: {
+					reason: "Initially loading Darwin Push Port time-table, try again soon."
+				}
+			} as ErrorResponse)
+
+		let locations = timeTable.locations
+		if (query.type === "station") locations = locations.filter(location => location.isStation)
+		else if (query.type === "")
+			return response.status(400).send({
+				status: Status.OmitEmptyQueryParameters,
+				data: {
+					reason: "Omit query parameter 'type' with empty value."
+				}
+			} as ErrorResponse)
+		else if (query.type !== undefined)
+			return response.status(400).send({
+				status: Status.InvalidQueryParameterValue,
+				data: {
+					reason: `Value '${query.type}' is not valid for query parameter 'type'.`
+				}
+			} as ErrorResponse)
+
+		return response.status(501).send({
+			status: Status.NotImplementedYet,
 			data: {
-				reason: "Still loading Darwin Push Port time-table. Try again later."
+				type: query.type,
+				locations: locations.map(location => location.toJson())
 			}
-		} as ErrorResponse)
-
-	// TODO
-
-	return response.status(501).send({
-		status: Status.NotImplementedYet,
-		data: {
-			filter: query.filter,
-			locations: []
-		}
-	} as LocationsResponse)
-})
+		} as LocationsResponse)
+	})
+}

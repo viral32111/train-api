@@ -10,5 +10,8 @@ export enum Status {
 
 	NotImplementedYet = 3,
 
-	LoadingDarwinPushPortTimeTable = 4
+	LoadingDarwinPushPortTimeTable = 4,
+
+	InvalidQueryParameterValue = 5,
+	OmitEmptyQueryParameters = 6
 }

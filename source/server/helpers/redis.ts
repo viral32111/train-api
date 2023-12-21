@@ -7,7 +7,7 @@ import { REDIS_KEY_DELIMITER, REDIS_KEY_PREFIX } from "../environment.js"
  * @param delimiter The delimiter to use.
  * @returns The Redis key.
  * @since 0.1.0
- * @example createKey(["foo", "bar"], "train-api", ":") // "train-api:darwin-push-port:foo:bar"
+ * @example createKey(["foo", "bar"], "train", ":") // "train:darwin-push-port:foo:bar"
  */
 export const createKey = (
 	parts: string[] | string,
@@ -24,7 +24,7 @@ export const createKey = (
  * @param delimiter The delimiter to use.
  * @return The parts of the key.
  * @since 0.1.0
- * @example splitKey("train-api:darwin-push-port:foo:bar", true, "train-api", ":") // ["foo", "bar"]
+ * @example splitKey("train:darwin-push-port:foo:bar", true, "train", ":") // ["foo", "bar"]
  */
 export const splitKey = (
 	key: string,
@@ -32,6 +32,6 @@ export const splitKey = (
 	prefix = REDIS_KEY_PREFIX,
 	delimiter = REDIS_KEY_DELIMITER
 ): string[] => {
-	if (removePrefix) key = key.replace(new RegExp(prefix, "y"), "")
+	if (removePrefix) key = key.replace(new RegExp(`${prefix}${delimiter}`, "y"), "")
 	return key.split(delimiter)
 }

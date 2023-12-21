@@ -1,4 +1,4 @@
-import { deflate } from "zlib"
+import { gunzip } from "zlib"
 
 /**
  * Decompresses a buffer.
@@ -9,7 +9,7 @@ import { deflate } from "zlib"
  */
 export const decompress = async (data: Buffer): Promise<Buffer> => {
 	return new Promise((resolve, reject) => {
-		deflate(data, (error, result) => {
+		gunzip(data, (error, result) => {
 			if (error) reject(error)
 			else resolve(result)
 		})
