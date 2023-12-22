@@ -1,11 +1,12 @@
 import log4js from "log4js"
 import "./log.js"
 
-import { CronJob } from "cron"
 import { EXPRESS_LISTEN_ADDRESS, EXPRESS_LISTEN_PORT, LOG_FILE_PATH, PACKAGE_FILE } from "./environment.js"
 import { app, finaliseExpress } from "./express.js"
+import { scheduleHourlyTask, scheduleWeeklyTask } from "./helpers/cron.js"
 import { parsePackageVersion } from "./helpers/version.js"
 import { refresh } from "./sources/national-rail-data-portal/darwin-push-port/darwin-push-port.js"
+import { fetchStationCoordinates } from "./sources/uk-train-station-locations/uk-train-station-locations.js"
 
 const log = log4js.getLogger("main")
 log.info("Logging to file '%s'.", LOG_FILE_PATH)
@@ -60,8 +61,7 @@ export const httpServer = app.listen(EXPRESS_LISTEN_PORT, EXPRESS_LISTEN_ADDRESS
 		return
 	}
 
-	new CronJob(
-		"0 * * * *", // Every hour
+	scheduleHourlyTask(
 		async () => {
 			log.info("Refreshing Darwin Push Port data...")
 
@@ -69,11 +69,18 @@ export const httpServer = app.listen(EXPRESS_LISTEN_PORT, EXPRESS_LISTEN_ADDRESS
 		},
 		() => {
 			log.info("Refreshed Darwin Push Port data.")
+		}
+	)
+
+	scheduleWeeklyTask(
+		async () => {
+			log.debug("Fetching station coordinates...")
+			const stations = await fetchStationCoordinates()
+			log.info("Fetched %d station coordinate(s).", stations.length)
 		},
-		true,
-		"utc",
-		undefined,
-		true // Run immediately
+		() => {
+			log.debug("Fetched station coordinates.")
+		}
 	)
 })
 
