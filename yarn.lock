@@ -1491,6 +1491,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@stomp/stompjs@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "@stomp/stompjs@npm:7.0.0"
+  checksum: b68d32625efa71d12c57eb5174a83625277da306f9adb044ebf91000c6dec1a433abfd11e44a74d21f7b6fc27490e12997468f0c4f276767ab25c59f7ae93bd4
+  languageName: node
+  linkType: hard
+
 "@types/body-parser@npm:*":
   version: 1.19.4
   resolution: "@types/body-parser@npm:1.19.4"
@@ -1942,6 +1949,7 @@ __metadata:
   resolution: "@viral32111/train-api@workspace:."
   dependencies:
     "@aws-sdk/client-s3": "npm:^3.441.0"
+    "@stomp/stompjs": "npm:^7.0.0"
     "@types/chai": "npm:^4.3.9"
     "@types/cors": "npm:^2.8.15"
     "@types/express": "npm:^4.17.20"
@@ -1974,7 +1982,7 @@ __metadata:
     ts-interface-checker: "npm:^1.0.2"
     typescript: "npm:^5.2.2"
     utf-8-validate: "npm:^6.0.3"
-    ws: "npm:^8.14.2"
+    ws: "npm:^8.16.0"
     xml2js: "npm:^0.6.2"
     zlib: "npm:^1.0.5"
   dependenciesMeta:
@@ -5757,9 +5765,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:^8.14.2":
-  version: 8.14.2
-  resolution: "ws@npm:8.14.2"
+"ws@npm:^8.16.0":
+  version: 8.16.0
+  resolution: "ws@npm:8.16.0"
   peerDependencies:
     bufferutil: ^4.0.1
     utf-8-validate: ">=5.0.2"
@@ -5768,7 +5776,7 @@ __metadata:
       optional: true
     utf-8-validate:
       optional: true
-  checksum: 35b4c2da048b8015c797fd14bcb5a5766216ce65c8a5965616a5440ca7b6c3681ee3cbd0ea0c184a59975556e9d58f2002abf8485a14d11d3371770811050a16
+  checksum: a7783bb421c648b1e622b423409cb2a58ac5839521d2f689e84bc9dc41d59379c692dd405b15a997ea1d4c0c2e5314ad707332d0c558f15232d2bc07c0b4618a
   languageName: node
   linkType: hard
 

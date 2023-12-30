@@ -28,11 +28,13 @@ export const LOG_FILE_PATH = getEnvironmentVariable<string>(
 	resolve(currentDirectory, "logs", "server.log")
 )
 
+// Express API
 export const EXPRESS_LISTEN_ADDRESS = getEnvironmentVariable<string>("EXPRESS_LISTEN_ADDRESS", "0.0.0.0")
 export const EXPRESS_LISTEN_PORT = getEnvironmentVariable<number>("EXPRESS_LISTEN_PORT", 3000, 0, 65535)
 export const EXPRESS_MAX_REQUEST_SIZE = getEnvironmentVariable<number>("EXPRESS_MAX_REQUEST_SIZE", 1024 * 1024 * 1, 0)
 export const EXPRESS_AUTHORIZATION_TOKEN = getEnvironmentVariable<string>("EXPRESS_AUTHORIZATION_TOKEN")
 
+// Darwin Push Port - File (timetable & reference data, via S3)
 export const NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_REGION = getEnvironmentVariable<string>(
 	"NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_REGION",
 	"eu-west-1"
@@ -52,6 +54,32 @@ export const NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_SECRET_KEY = getEnvironmentVariab
 	"NATIONAL_RAIL_DARWIN_PUSH_PORT_S3_SECRET_KEY"
 )
 
+// Darwin Push Port - Topic (real-time feed, via STOMP)
+export const NATIONAL_RAIL_DARWIN_PUSH_PORT_TOPIC_HOST = getEnvironmentVariable<string>(
+	"NATIONAL_RAIL_DARWIN_PUSH_PORT_TOPIC_HOST"
+)
+export const NATIONAL_RAIL_DARWIN_PUSH_PORT_TOPIC_PORT_STOMP = getEnvironmentVariable<number>(
+	"NATIONAL_RAIL_DARWIN_PUSH_PORT_TOPIC_PORT_STOMP",
+	61613,
+	0,
+	65535
+)
+export const NATIONAL_RAIL_DARWIN_PUSH_PORT_TOPIC_USER = getEnvironmentVariable<string>(
+	"NATIONAL_RAIL_DARWIN_PUSH_PORT_TOPIC_USER"
+)
+export const NATIONAL_RAIL_DARWIN_PUSH_PORT_TOPIC_PASSWORD = getEnvironmentVariable<string>(
+	"NATIONAL_RAIL_DARWIN_PUSH_PORT_TOPIC_PASSWORD"
+)
+export const NATIONAL_RAIL_DARWIN_PUSH_PORT_TOPIC_LIVE_FEED = getEnvironmentVariable<string>(
+	"NATIONAL_RAIL_DARWIN_PUSH_PORT_TOPIC_LIVE_FEED",
+	"darwin.pushport-v16"
+)
+export const NATIONAL_RAIL_DARWIN_PUSH_PORT_TOPIC_STATUS_MESSAGES = getEnvironmentVariable<string>(
+	"NATIONAL_RAIL_DARWIN_PUSH_PORT_TOPIC_STATUS_MESSAGES",
+	"darwin.status"
+)
+
+// Redis cache database
 export const REDIS_SERVER_ADDRESS = getEnvironmentVariable<string>("REDIS_SERVER_ADDRESS", "127.0.0.1")
 export const REDIS_SERVER_PORT = getEnvironmentVariable<number>("REDIS_SERVER_PORT", 6379, 0, 65535)
 export const REDIS_USE_TLS = getEnvironmentVariable<boolean>("REDIS_USE_TLS", false)

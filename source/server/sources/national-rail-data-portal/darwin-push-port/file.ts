@@ -28,7 +28,7 @@ import { setTimeTable } from "../../../state.js"
 // Why is the Redis client type so complicated?!
 type RedisClient = ReturnType<typeof createClient>
 
-const log = log4js.getLogger("darwin-push-port")
+const log = log4js.getLogger("darwin-push-port/file")
 
 /**
  * Refreshes all timetable data from Darwin Push Port.
